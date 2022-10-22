@@ -71,3 +71,15 @@ class ControlRange:
             f"{self.step},{self.threshold},{self.timeout})"
         )
 
+    @classmethod
+    def iterate_controls(
+            cls,
+            controls: typing.Mapping[str,object],  # object: instance of ControlRange
+    ) -> typing.Generator[typing.Mapping[str,int], None, None]:
+        controls_ = [controls[key] for key in sorted(controls.keys())]
+        all_values = [prange.get_values() for prange in controls_]
+        for values in itertools.product(all_values):
+            yield {c:v for c,v in zip(controls_,values)}
+        return None
+
+
