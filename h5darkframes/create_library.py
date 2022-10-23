@@ -1,25 +1,20 @@
 from collections import OrderedDict
-import datetime
-import itertools
-import alive_progress
 from pathlib import Path
-import time
 import h5py
 import typing
 import numpy as np
+from numpy import typing as npt
 from .camera import Camera
 from .control_range import ControlRange
-from .iterations import iterate_ints, interate_controls
+from .progress import Progress
 
-
-        
 
 def _add_to_hdf5(
-        camera: Camera,
-        controls: typing.OrderedDict[str,int],
-        avg_over: int,
-        hdf5_file: h5py.File,
-        progress: typing.Optional[Progress]=None
+    camera: Camera,
+    controls: typing.OrderedDict[str, int],
+    avg_over: int,
+    hdf5_file: h5py.File,
+    progress: typing.Optional[Progress] = None,
 ) -> None:
     """
     Has the camera take images, average them and adds this averaged image
@@ -31,16 +26,16 @@ def _add_to_hdf5(
 
     # for the progress feedback
     estimated_duration = camera.estimate_picture_time(controls)
-    
+
     # setting the configuration of the current pictures set
-    for control,value in controls.items():
-        camera.reach_control(control,value,progress=progress)
+    for control, value in controls.items():
+        camera.reach_control(control, value, progress=progress)
 
     # taking and averaging the pictures
-    images: typing.List[FlattenData] = []
+    images: typing.List[npt.ArrayLike] = []
     for _ in range(avg_over):
         images.append(camera.capture().get_data())
-        progress.pictures_taken_feedback(estimated_duration)
+        progress.pictures_taken_feedback(controls, estimated_duration, 1)
     image = np.mean(images, axis=0)
 
     # adding the image to the hdf5 file
@@ -54,16 +49,15 @@ def _add_to_hdf5(
     group.attrs["camera_config"] = repr(camera.get_configuration())
 
 
-
 def library(
-        name: str,
-        camera: Camera,
-        control_ranges: OrderedDict[str, ControlRange],
-        avg_over: int,
-        hdf5_path: Path,
-        progress: typing.Optional[Progress] = None
+    name: str,
+    camera: Camera,
+    control_ranges: OrderedDict[str, ControlRange],
+    avg_over: int,
+    hdf5_path: Path,
+    progress: typing.Optional[Progress] = None,
 ) -> int:
-    """ Create an hdf5 image library file
+    """Create an hdf5 image library file
 
     This function will take pictures using
     the specified configuration range. For each configuration, a set of
@@ -79,20 +73,13 @@ def library(
     # opening the hdf5 file in write mode
     with h5py.File(hdf5_path, "w") as hdf5_file:
 
-            # adding the name to the hdf5 file
-            hdf5_file.attrs["name"] = name
+        # adding the name to the hdf5 file
+        hdf5_file.attrs["name"] = name
 
-            # adding the control ranges to the hdf5 file
-            hdf5_file.attrs["controls"] = repr(controls)
+        # adding the control ranges to the hdf5 file
+        hdf5_file.attrs["controls"] = repr(control_ranges)
 
-            # iterating over all the controls and adding
-            # the images to the hdf5 file
-            for controls in ControlRange.iterate_controls(control_ranges):
-                _add_to_hdf5(
-                    camera,
-                    controls,
-                    hdf5_file,
-                    avg_over,
-                    progress = Progress
-                )
-
+        # iterating over all the controls and adding
+        # the images to the hdf5 file
+        for controls in ControlRange.iterate_controls(control_ranges):
+            _add_to_hdf5(camera, controls, hdf5_file, avg_over, progress=Progress)

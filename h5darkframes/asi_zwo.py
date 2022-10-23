@@ -1,65 +1,71 @@
+import numpy.typing as npt
+import toml
+import typing
+from collections import OrderedDict
+from pathlib import Path
 import camera_zwo_asi as zwo
 from .camera import Camera
+from .control_range import ControlRange
+
 
 class AsiZwoCamera(Camera):
-
-    def __init__(self, index):
+    def __init__(
+        self, index, control_ranges: typing.Mapping[str, ControlRange]
+    ) -> None:
+        super().__init__(control_ranges)
         self._camera = zwo.Camera(index)
 
-    def picture(self)->npt.ArrayLike:
+    def picture(self) -> npt.ArrayLike:
         """
         Taking a picture
         """
         image = self._camera.capture()
         return image.get_image()
 
-    def configure(self, path: Path)->None:
+    def configure(self, path: Path) -> None:
         """
-        Configure the camera from a toml 
+        Configure the camera from a toml
         configuration file.
         """
         if not path.is_file():
             raise FileNotFoundError(str(path))
         content = toml.load(str(path))
-        if not "ROI" in content:
+        if "ROI" not in content:
             raise KeyError(
                 f"the key 'ROI' could not be found in {path} "
                 "(required for zwo asi cameras)"
             )
         roi = zwo.ROI.from_toml(content)
         self._camera.set_roi(roi)
-    
-    def estimate_picture_time(
-            self
-            controls : typing.Mapping[str,int]
-    )->float:
+
+    def estimate_picture_time(self, controls: typing.Mapping[str, int]) -> float:
         """
         estimation of how long it will take for a picture
         to be taken (typically relevant if one of the control
         is the exposure time)
         """
-        if not "Exposure" in control:
-            exposure = self._camera.get_controls()["Exposure"].value / 1e6
+        if "Exposure" not in controls:
+            return self._camera.get_controls()["Exposure"].value / 1e6
         else:
             return controls["Exposure"] / 1e6
-    
-    def set_control(control: str, value: int)->None:
+
+    def set_control(self, control: str, value: int) -> None:
         """
         Changing the configuration of the camera
         """
         if control == "TargetTemp":
-            self._camera.set_control("CoolerOn",1)
-        self._camera.set_control(control,value)
+            self._camera.set_control("CoolerOn", 1)
+        self._camera.set_control(control, value)
 
-    def get_control(control: str)->int:
+    def get_control(self, control: str) -> int:
         """
         Getting the configuration of the camera
         """
         control = control if control != "TargetTemp" else "Temperature"
         return self._camera.get_controls()[control].value
-        
+
     @classmethod
-    def generate_config_file(cls, path: Path):
+    def generate_config_file(cls, path: Path, index: int = 0):
         """
         Generate a toml configuration file with reasonable
         default values. User can edit this file and then call
@@ -71,9 +77,10 @@ class AsiZwoCamera(Camera):
                 f"can not generate the configuration file {path}: "
                 f"directory {path.parent} not found"
             )
+        camera = zwo.Camera(index)
         r: typing.Dict[str, typing.Any] = {}
         r["average_over"] = 5
-        roi = self._camera.get_roi().to_dict()
+        roi = camera.get_roi().to_dict()
         r["ROI"] = roi
         control_ranges = OrderedDict()
         control_ranges["TargetTemp"] = ControlRange(-15, 15, 3, 1, 600)
@@ -84,6 +91,3 @@ class AsiZwoCamera(Camera):
             r["controllables"][name] = control_range.to_dict()
         with open(path, "w") as f:
             toml.dump(r, f)
-
-        
-    

@@ -1,9 +1,5 @@
-from collections import OrderedDict
 import typing
-import toml
-from pathlib import Path
-from .camera import Camera
-from .roi import ROI
+import itertools
 
 
 class ControlRange:
@@ -73,13 +69,11 @@ class ControlRange:
 
     @classmethod
     def iterate_controls(
-            cls,
-            controls: typing.Mapping[str,object],  # object: instance of ControlRange
-    ) -> typing.Generator[typing.Mapping[str,int], None, None]:
+        cls,
+        controls: typing.Mapping[str, object],  # object: instance of ControlRange
+    ) -> typing.Generator[typing.Mapping[str, int], None, None]:
         controls_ = [controls[key] for key in sorted(controls.keys())]
         all_values = [prange.get_values() for prange in controls_]
         for values in itertools.product(all_values):
-            yield {c:v for c,v in zip(controls_,values)}
+            yield {c: v for c, v in zip(controls_, values)}
         return None
-
-
