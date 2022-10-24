@@ -71,9 +71,13 @@ class ControlRange:
     def iterate_controls(
         cls,
         controls: typing.Mapping[str, object],  # object: instance of ControlRange
-    ) -> typing.Generator[typing.Mapping[str, int], None, None]:
-        controls_ = [controls[key] for key in sorted(controls.keys())]
-        all_values = [prange.get_values() for prange in controls_]
-        for values in itertools.product(all_values):
-            yield {c: v for c, v in zip(controls_, values)}
+    ) -> typing.Generator[typing.Dict[str, int], None, None]:
+        sorted_controls = sorted(controls.keys())
+        controls_ = [controls[key] for key in sorted_controls]
+        all_values: typing.List[typing.Iterable] = []
+        for prange in controls_:
+            prange_ = typing.cast(ControlRange, prange)
+            all_values.append(prange_.get_values())
+        for values in itertools.product(*all_values):
+            yield {c: v for c, v in zip(sorted_controls, values)}
         return None

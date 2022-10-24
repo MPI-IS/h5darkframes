@@ -30,13 +30,14 @@ def _add_to_hdf5(
     # setting the configuration of the current pictures set
     for control, value in controls.items():
         camera.reach_control(control, value, progress=progress)
-
+        
     # taking and averaging the pictures
     images: typing.List[npt.ArrayLike] = []
     for _ in range(avg_over):
-        images.append(camera.capture().get_data())
-        progress.pictures_taken_feedback(controls, estimated_duration, 1)
-    image = np.mean(images, axis=0)
+        images.append(camera.picture())
+        if progress is not None:
+            progress.picture_taken_feedback(controls, estimated_duration, 1)
+    image = np.mean(images, axis=0)  # type: ignore
 
     # adding the image to the hdf5 file
     group = hdf5_file
@@ -56,7 +57,7 @@ def library(
     avg_over: int,
     hdf5_path: Path,
     progress: typing.Optional[Progress] = None,
-) -> int:
+) -> None:
     """Create an hdf5 image library file
 
     This function will take pictures using
@@ -82,4 +83,7 @@ def library(
         # iterating over all the controls and adding
         # the images to the hdf5 file
         for controls in ControlRange.iterate_controls(control_ranges):
-            _add_to_hdf5(camera, controls, hdf5_file, avg_over, progress=Progress)
+            controls_: typing.OrderedDict[str, int] = OrderedDict()
+            for control in control_ranges.keys():
+                controls_[control] = controls[control]
+            _add_to_hdf5(camera, controls_, avg_over, hdf5_file, progress=progress)

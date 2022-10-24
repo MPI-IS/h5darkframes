@@ -15,9 +15,7 @@ class Camera:
         self._thresholds = {
             control: cr.threshold for control, cr in control_ranges.items()
         }
-        self._timeouts = {
-            control: cr.timeouts for control, cr in control_ranges.items()
-        }
+        self._timeouts = {control: cr.timeout for control, cr in control_ranges.items()}
         self._set_values: typing.Dict[str, typing.Optional[int]] = {
             control: None for control in control_ranges.keys()
         }
@@ -48,13 +46,13 @@ class Camera:
         """
         raise NotImplementedError
 
-    def set_control(control: str, value: int) -> None:
+    def set_control(self, control: str, value: int) -> None:
         """
         Changing the configuration of the camera
         """
         raise NotImplementedError()
 
-    def get_control(control: str) -> int:
+    def get_control(self, control: str) -> int:
         """
         Getting the configuration of the camera
         """
@@ -83,16 +81,20 @@ class Camera:
         if threshold == 0:
             return
         start = time.time()
-        while time.time() - start < timeout:
+        tdiff = time.time() - start
+        while tdiff < timeout:
             obtained_value = self.get_control(control)
             if abs(value - obtained_value) <= threshold:
                 return
             if progress is not None:
-                progress.reach_control_callback(obtained_value, value)
+                progress.reach_control_feedback(
+                    control, obtained_value, value, threshold, tdiff, timeout
+                )
             time.sleep(sleeptime)
+            tdiff = time.time() - start
 
     @classmethod
-    def generate_config_file(cls, path: Path, **kargs) -> None:
+    def generate_config_file(cls, path: Path, **kwargs) -> None:
         """
         Generate a default toml configuration file specifying the control ranges
         of the darkframes pictures.

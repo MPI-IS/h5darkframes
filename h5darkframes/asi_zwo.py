@@ -30,13 +30,13 @@ class AsiZwoCamera(Camera):
         if not path.is_file():
             raise FileNotFoundError(str(path))
         content = toml.load(str(path))
-        if "ROI" not in content:
+        try:
+            config = content["camera"]
+        except KeyError:
             raise KeyError(
-                f"the key 'ROI' could not be found in {path} "
-                "(required for zwo asi cameras)"
+                f"failed to find the key 'camera' in the configuration file {path}"
             )
-        roi = zwo.ROI.from_toml(content)
-        self._camera.set_roi(roi)
+        self._camera.configure_from_toml(config)
 
     def estimate_picture_time(self, controls: typing.Mapping[str, int]) -> float:
         """
@@ -65,29 +65,35 @@ class AsiZwoCamera(Camera):
         return self._camera.get_controls()[control].value
 
     @classmethod
-    def generate_config_file(cls, path: Path, index: int = 0):
+    def generate_config_file(cls, path: Path, **kwargs):
         """
         Generate a toml configuration file with reasonable
         default values. User can edit this file and then call
-        the method 'from_toml' to get desired instances of ControlRange
+        the method 'ControlRangefrom_toml' to get desired instances of ControlRange
         and ROI.
         """
+        if "index" not in kwargs:
+            raise ValueError(
+                "the keywork argument 'index' is required for generating "
+                "asi zwo camera configuration file"
+            )
         if not path.parent.is_dir():
             raise FileNotFoundError(
                 f"can not generate the configuration file {path}: "
                 f"directory {path.parent} not found"
             )
-        camera = zwo.Camera(index)
+        camera = zwo.Camera(kwargs["index"])
         r: typing.Dict[str, typing.Any] = {}
-        r["average_over"] = 5
-        roi = camera.get_roi().to_dict()
-        r["ROI"] = roi
+        r["darkframes"]
+        r["darkframes"]["average_over"] = 5
         control_ranges = OrderedDict()
         control_ranges["TargetTemp"] = ControlRange(-15, 15, 3, 1, 600)
         control_ranges["Exposure"] = ControlRange(1000000, 30000000, 5000000, 1, 0.1)
         control_ranges["Gain"] = ControlRange(200, 400, 100, 1, 0.1)
-        r["controllables"] = OrderedDict()
+        r["darkframes"]["controllables"] = OrderedDict()
         for name, control_range in control_ranges.items():
-            r["controllables"][name] = control_range.to_dict()
+            r["darkframes"]["controllables"][name] = control_range.to_dict()
+        r["camera"] = camera.to_dict()
+
         with open(path, "w") as f:
             toml.dump(r, f)

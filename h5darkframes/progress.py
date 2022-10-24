@@ -1,55 +1,15 @@
 import alive_progress
 import typing
-from collections import OrderedDict
-from .control_range import ControlRange
-from .camera import Camera
-
-
-AliveBarProgress = alive_progress.core.progress.__AliveBarHandle
-
-
-def _estimate_total_duration(
-    camera: Camera,
-    control_ranges: OrderedDict[str, ControlRange],
-    avg_over: int,
-) -> typing.Tuple[int, int]:
-    """
-    Return an estimation of how long capturing all darkframes will
-    take (in seconds).
-
-    Returns
-    -------
-       the expected duration (in seconds) and the number of pictures
-       that will be taken.
-    """
-
-    controls = list(control_ranges.keys())
-    all_values = list(
-        ControlRange.iterate_controls([control_ranges[control] for control in controls])
-    )
-    total_time = sum(
-        [
-            camera.estimate_picture_time(
-                {control: value for control, value in zip(controls, values)}
-            )
-            * avg_over
-            for values in all_values
-        ]
-    )
-    nb_pics = len(all_values) * avg_over
-    return total_time, nb_pics
 
 
 class Progress:
     def __init__(
         self,
-        camera: Camera,
-        control_ranges: typing.OrderedDict[str, ControlRange],
-        avg_over: int,
+        duration: int,
+        nb_pics: int,
     ):
-        self._estimated_duration, self._nb_pics = _estimate_total_duration(
-            camera, control_ranges, avg_over
-        )
+        self._estimated_duration = duration
+        self._nb_pics = nb_pics
 
     def reach_control_feedback(
         self,
@@ -71,11 +31,10 @@ class Progress:
 class AliveBarProgress(Progress):
     def __init__(
         self,
-        camera: Camera,
-        control_ranges: typing.OrderedDict[str, ControlRange],
-        avg_over: int,
+        duration: int,
+        nb_pics: int,
     ):
-        super().__init__(camera, control_ranges, avg_over)
+        super().__init__(duration, nb_pics)
         self._bar = alive_progress.alive_bar(
             super()._estimated_duration,
             dual_line=True,

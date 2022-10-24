@@ -1,6 +1,6 @@
 import typing
 import h5py
-from .image import FlattenData, ImageType, Image, get_image_class
+from numpy import typing as npt
 from pathlib import Path
 from .control_range import ControlRange
 
@@ -17,7 +17,7 @@ def _get_closest(value: int, values: typing.List[int]) -> int:
 
 def _get_image(
     values: typing.List[int], hdf5_file: h5py.File, index: int = 0
-) -> typing.Tuple[FlattenData, typing.Dict]:
+) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
     """
     Returns the image in the library which has been taken with
     the configuration the closest to "values".
@@ -47,10 +47,6 @@ class ImageLibrary:
         self._controls: typing.List[str] = sorted(
             eval(self._hdf5_file.attrs["controls"])
         )
-        self._type: ImageType = eval(self._hdf5_file.attrs["image_type"])
-        self._width: int = int(self._hdf5_file.attrs["width"])
-        self._height: int = int(self._hdf5_file.attrs["height"])
-        self._image_class = get_image_class(self._type)
 
     def params(self) -> typing.OrderedDict[str, ControlRange]:
         """
@@ -70,19 +66,9 @@ class ImageLibrary:
         except KeyError:
             return "(not named)"
 
-    def image_type(self) -> ImageType:
-        """
-        The type of the images stored in the library
-        """
-        return self._type
-
-    def size(self) -> typing.Tuple[int, int]:
-        """
-        Width and height of the images stored in the library
-        """
-        return (self._width, self._height)
-
-    def get(self, controls: typing.Dict[str, int]) -> typing.Tuple[Image, typing.Dict]:
+    def get(
+        self, controls: typing.Dict[str, int]
+    ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
         """
         Returns the image in the library that was taken using
         the configuration the closest to the passed controls.
@@ -115,12 +101,10 @@ class ImageLibrary:
                 )
 
         values = list(controls.values())
-        image: FlattenData
+        image: npt.ArrayLike
         config: typing.Dict
         image, config = _get_image(values, self._hdf5_file, index=0)
-        image_instance = self._image_class(self._width, self._height)
-        image_instance._data = image
-        return image_instance, config
+        return image, config
 
     def close(self) -> None:
         self._hdf5_file.close()
