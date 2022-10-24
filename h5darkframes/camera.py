@@ -78,8 +78,6 @@ class Camera:
         timeout = self._timeouts[control]
         threshold = self._thresholds[control]
         self.set_control(control, value)
-        if threshold == 0:
-            return
         start = time.time()
         tdiff = time.time() - start
         while tdiff < timeout:

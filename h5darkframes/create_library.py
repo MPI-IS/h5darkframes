@@ -83,7 +83,4 @@ def library(
         # iterating over all the controls and adding
         # the images to the hdf5 file
         for controls in ControlRange.iterate_controls(control_ranges):
-            controls_: typing.OrderedDict[str, int] = OrderedDict()
-            for control in control_ranges.keys():
-                controls_[control] = controls[control]
-            _add_to_hdf5(camera, controls_, avg_over, hdf5_file, progress=progress)
+            _add_to_hdf5(camera, controls, avg_over, hdf5_file, progress=progress)

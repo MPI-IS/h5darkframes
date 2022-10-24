@@ -1,6 +1,6 @@
 import typing
 import itertools
-
+from collections import OrderedDict
 
 class ControlRange:
     """
@@ -71,7 +71,7 @@ class ControlRange:
     def iterate_controls(
         cls,
         controls: typing.Mapping[str, object],  # object: instance of ControlRange
-    ) -> typing.Generator[typing.Dict[str, int], None, None]:
+    ) -> typing.Generator[typing.OrderedDict[str, int], None, None]:
         sorted_controls = sorted(controls.keys())
         controls_ = [controls[key] for key in sorted_controls]
         all_values: typing.List[typing.Iterable] = []
@@ -79,5 +79,8 @@ class ControlRange:
             prange_ = typing.cast(ControlRange, prange)
             all_values.append(prange_.get_values())
         for values in itertools.product(*all_values):
-            yield {c: v for c, v in zip(sorted_controls, values)}
+            d = OrderedDict()
+            for control, value in zip(sorted_controls,values):
+                d[control]=value
+            yield(d)
         return None

@@ -2,13 +2,48 @@ import time
 import typing
 import numpy
 import toml
+import threading
 from collections import OrderedDict
 from numpy import typing as npt
 from pathlib import Path
 from .control_range import ControlRange
 from .camera import Camera
 
+class _Height:
 
+    def __init__(self, value: int)->None:
+        self._value = value
+        self._desired = value
+        self._lock = threading.Lock()
+        self._running = False
+        self._thread = threading.Thread(target=self._run)
+        self._thread.start()
+        
+    def set(self, value)->None:
+        with self._lock:
+            self._desired = value
+
+    def get(self)->int:
+        with self._lock:
+            return self._value
+            
+    def stop(self)->None:
+        self._running = False
+        self._thread.join()
+        
+    def _run(self)->None:
+        self._running = True
+        while self._running:
+            with self._lock:
+                if self._value != self._desired:
+                    if self._value > self._desired:
+                        self._value -= 1
+                    else:
+                        self._value += 1
+            time.sleep(0.1)
+
+    
+            
 class DummyCamera(Camera):
     """
     dummy camera, for testing
@@ -19,15 +54,19 @@ class DummyCamera(Camera):
     ) -> None:
         super().__init__(control_ranges)
         self.width = 0
-        self.height = 0
+        self._height = _Height(0)
         self._value = value
 
+    def stop(self):
+        self._height.stop()
+        
     def picture(self) -> npt.ArrayLike:
         """
         Taking a picture
         """
         time.sleep(0.01)
-        return numpy.zeros((self.width, self.height)) + self._value
+        shape = (self.width, self._height.get())
+        return numpy.zeros(shape) + self._value
 
     def configure(self, path: Path) -> None:
         """
@@ -48,7 +87,7 @@ class DummyCamera(Camera):
         """
         Returns the current configuration of the camera
         """
-        return {"width": self.width, "height": self.height, "value": self._value}
+        return {"width": self.width, "height": self._height.get(), "value": self._value}
 
     def estimate_picture_time(self, controls: typing.Mapping[str, int]) -> float:
         """
@@ -62,14 +101,20 @@ class DummyCamera(Camera):
         """
         Changing the configuration of the camera
         """
-        setattr(self, control, value)
-
+        if control != "height":
+            setattr(self, control, value)
+        else:
+            self._height.set(value)
+            
     def get_control(self, control: str) -> int:
         """
         Getting the configuration of the camera
         """
-        return getattr(self, control)
-
+        if control != "height":
+            return getattr(self, control)
+        else:
+            return self._height.get()
+        
     @classmethod
     def generate_config_file(cls, path: Path, **kwargs) -> None:
         """
@@ -88,3 +133,9 @@ class DummyCamera(Camera):
         r["camera"] = {"value": kwargs["value"]}
         with open(path, "w") as f:
             toml.dump(r, f)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self,_,__,___):
+        self.stop()
