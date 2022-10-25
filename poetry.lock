@@ -33,80 +33,12 @@ tests = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900
 tests_no_zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins"]
 
 [[package]]
-name = "camera-zwo-asi"
-version = "1.0.4"
-description = "python wrapper for ZWO astronomical cameras"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-cmake_build_extension = "*"
-ninja = "*"
-nptyping = "*"
-numpy = "*"
-opencv-python = "*"
-toml = "*"
-types-toml = "*"
-
-[package.extras]
-all = ["pytest", "pytest-icdiff"]
-test = ["pytest", "pytest-icdiff"]
-
-[[package]]
-name = "cmake"
-version = "3.24.1.1"
-description = "CMake is an open-source, cross-platform family of tools designed to build, test and package software"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.extras]
-test = ["codecov (>=2.0.5)", "coverage (>=4.2)", "flake8 (>=3.0.4)", "path.py (>=11.5.0)", "pytest (>=3.0.3)", "pytest-cov (>=2.4.0)", "pytest-runner (>=2.9)", "pytest-virtualenv (>=1.7.0)", "scikit-build (>=0.10.0)", "setuptools (>=28.0.0)", "virtualenv (>=15.0.3)", "wheel"]
-
-[[package]]
-name = "cmake-build-extension"
-version = "0.5.1"
-description = "Setuptools extension to build and package CMake projects."
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-cmake = "*"
-GitPython = "*"
-ninja = "*"
-setuptools-scm = "*"
-
-[[package]]
 name = "colorama"
 version = "0.4.5"
 description = "Cross-platform colored terminal text."
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-
-[[package]]
-name = "gitdb"
-version = "4.0.9"
-description = "Git Object Database"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-smmap = ">=3.0.1,<6"
-
-[[package]]
-name = "GitPython"
-version = "3.1.29"
-description = "GitPython is a python library used to interact with Git repositories"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-gitdb = ">=4.0.1,<5"
 
 [[package]]
 name = "grapheme"
@@ -137,34 +69,6 @@ description = "iniconfig: brain-dead simple config-ini parsing"
 category = "main"
 optional = false
 python-versions = "*"
-
-[[package]]
-name = "ninja"
-version = "1.10.2.4"
-description = "Ninja is a small build system with a focus on speed"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.extras]
-test = ["codecov (>=2.0.5)", "coverage (>=4.2)", "flake8 (>=3.0.4)", "pytest (>=4.5.0)", "pytest-cov (>=2.7.1)", "pytest-runner (>=5.1)", "pytest-virtualenv (>=1.7.0)", "virtualenv (>=15.0.3)"]
-
-[[package]]
-name = "nptyping"
-version = "2.3.1"
-description = "Type hints for NumPy."
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-numpy = {version = ">=1.20.0,<2.0.0", markers = "python_version >= \"3.8\""}
-typing-extensions = {version = ">=4.0.0,<5.0.0", markers = "python_version < \"3.10\""}
-
-[package.extras]
-build = ["invoke (>=1.6.0)", "pip-tools (>=6.5.0)"]
-dev = ["autoflake", "beartype (<0.10.0)", "beartype (>=0.10.0)", "black", "codecov (>=2.1.0)", "coverage", "feedparser", "invoke (>=1.6.0)", "isort", "mypy", "pip-tools (>=6.5.0)", "pylint", "pyright", "setuptools", "typeguard", "wheel"]
-qa = ["autoflake", "beartype (<0.10.0)", "beartype (>=0.10.0)", "black", "codecov (>=2.1.0)", "coverage", "feedparser", "isort", "mypy", "pylint", "pyright", "setuptools", "typeguard", "wheel"]
 
 [[package]]
 name = "numpy"
@@ -253,45 +157,6 @@ tomli = ">=1.0.0"
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
 
 [[package]]
-name = "setuptools"
-version = "65.5.0"
-description = "Easily download, build, install, upgrade, and uninstall Python packages"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.extras]
-docs = ["furo", "jaraco.packaging (>=9)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-hoverxref (<2)", "sphinx-inline-tabs", "sphinx-notfound-page (==0.8.3)", "sphinx-reredirects", "sphinxcontrib-towncrier"]
-testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8 (<5)", "flake8-2020", "ini2toml[lite] (>=0.9)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "mock", "pip (>=19.1)", "pip-run (>=8.8)", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.3)", "pytest-flake8", "pytest-mypy (>=0.9.1)", "pytest-perf", "pytest-xdist", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
-testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
-
-[[package]]
-name = "setuptools-scm"
-version = "7.0.5"
-description = "the blessed package to manage your versions by scm tags"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-packaging = ">=20.0"
-setuptools = "*"
-tomli = ">=1.0.0"
-typing-extensions = "*"
-
-[package.extras]
-test = ["pytest (>=6.2)", "virtualenv (>20)"]
-toml = ["setuptools (>=42)"]
-
-[[package]]
-name = "smmap"
-version = "5.0.0"
-description = "A pure Python implementation of a sliding window memory map manager"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -307,26 +172,10 @@ category = "main"
 optional = false
 python-versions = ">=3.7"
 
-[[package]]
-name = "types-toml"
-version = "0.10.8"
-description = "Typing stubs for toml"
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
-name = "typing-extensions"
-version = "4.4.0"
-description = "Backported and Experimental Type Hints for Python 3.7+"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<4"
-content-hash = "d1fffe3e281c0cdebf78af0e4f5087703d0ca7fb641dfc744fb1d3e3c794d491"
+content-hash = "6d1f2b0fb123e1ba4875b21864fe01594812691ecde42b93563c8ad48416bf08"
 
 [metadata.files]
 about-time = [
@@ -341,42 +190,9 @@ attrs = [
     {file = "attrs-22.1.0-py2.py3-none-any.whl", hash = "sha256:86efa402f67bf2df34f51a335487cf46b1ec130d02b8d39fd248abfd30da551c"},
     {file = "attrs-22.1.0.tar.gz", hash = "sha256:29adc2665447e5191d0e7c568fde78b21f9672d344281d0c6e1ab085429b22b6"},
 ]
-camera-zwo-asi = [
-    {file = "camera_zwo_asi-1.0.4.tar.gz", hash = "sha256:1fff33260244f5cbb640ba6f03d2bd5010b682734b48c6482d598c52c66907a2"},
-]
-cmake = [
-    {file = "cmake-3.24.1.1-py2.py3-none-macosx_10_10_universal2.macosx_10_10_x86_64.macosx_11_0_arm64.macosx_11_0_universal2.whl", hash = "sha256:5db44d09123d721785165918d5220c18c2fb8a4784b126922a208085bded627c"},
-    {file = "cmake-3.24.1.1-py2.py3-none-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:d212e0945753420e02bdfaa3ba411b45af7bddb77e0db6335ee71b5cbbca6cea"},
-    {file = "cmake-3.24.1.1-py2.py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:f4ebb3b09b19d9e244929c17367b7c899b68f871285e07fd72edd59cc819bd28"},
-    {file = "cmake-3.24.1.1-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c9eca895c87c2d41d5766eacb1ece57e1ae51887bfa5501cb43b15f1b8d427ec"},
-    {file = "cmake-3.24.1.1-py2.py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2811de77fe8be5c14b6be395a6b9f60cd921ad84ca2491f92f6f5cce8570d7fb"},
-    {file = "cmake-3.24.1.1-py2.py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:70fe2f46f66c265874b26fb43b3332d707a60d1e0151d8f76dfe6487f5119198"},
-    {file = "cmake-3.24.1.1-py2.py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:4085aeaf85b462fee4f2f5e1b72e08136bfbc4f5c6241a521a1221d5f0a7eece"},
-    {file = "cmake-3.24.1.1-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cdff2c7fecbc122af8d75f3a2fb977f2bd361c2db3bd753b8ff817ec6eb217f1"},
-    {file = "cmake-3.24.1.1-py2.py3-none-musllinux_1_1_aarch64.whl", hash = "sha256:1137407cb24c54c486184bde10aa74c50eb90604ee601c6c45e8c754112f236c"},
-    {file = "cmake-3.24.1.1-py2.py3-none-musllinux_1_1_i686.whl", hash = "sha256:36de1952e7ca22be42df591de192d0dbe1bf93f17e4a190dda9ecd4e6276e75d"},
-    {file = "cmake-3.24.1.1-py2.py3-none-musllinux_1_1_ppc64le.whl", hash = "sha256:fe0e398861aae4aee97f32ee0af02692b48f3685ac0d52fa463737090a667ce2"},
-    {file = "cmake-3.24.1.1-py2.py3-none-musllinux_1_1_s390x.whl", hash = "sha256:e7e9e737a14b9e6ac6ae5ad89c697aa9ba5e061564822f708a19dde3f9e382a4"},
-    {file = "cmake-3.24.1.1-py2.py3-none-musllinux_1_1_x86_64.whl", hash = "sha256:5f02962ef635429f7552a002701f2589c6ce061c2f0157722e03b9b3fefa7215"},
-    {file = "cmake-3.24.1.1-py2.py3-none-win32.whl", hash = "sha256:6dce0562d6a7707d10f5c41f1d3adca1f1f2971bfbb3d24a780252cb81101497"},
-    {file = "cmake-3.24.1.1-py2.py3-none-win_amd64.whl", hash = "sha256:04e1a874476ef03a433d49715295e2b9583ff9fdb5b6f34572281e1b61e55b5f"},
-    {file = "cmake-3.24.1.1.tar.gz", hash = "sha256:7cccfc0388bfe4cb6a465fb8f8a57861c83c60956653b314cfde47865d94f03e"},
-]
-cmake-build-extension = [
-    {file = "cmake-build-extension-0.5.1.tar.gz", hash = "sha256:8206db07bf60ae1a51e555a15d474429c11aefd84d421324b3d723ac816fa81a"},
-    {file = "cmake_build_extension-0.5.1-py3-none-any.whl", hash = "sha256:96ba27de7cf2b722d4af638ac611ef8fcb3d79a46d04c6ca957e5c111ff07254"},
-]
 colorama = [
     {file = "colorama-0.4.5-py2.py3-none-any.whl", hash = "sha256:854bf444933e37f5824ae7bfc1e98d5bce2ebe4160d46b5edf346a89358e99da"},
     {file = "colorama-0.4.5.tar.gz", hash = "sha256:e6c6b4334fc50988a639d9b98aa429a0b57da6e17b9a44f0451f930b6967b7a4"},
-]
-gitdb = [
-    {file = "gitdb-4.0.9-py3-none-any.whl", hash = "sha256:8033ad4e853066ba6ca92050b9df2f89301b8fc8bf7e9324d412a63f8bf1a8fd"},
-    {file = "gitdb-4.0.9.tar.gz", hash = "sha256:bac2fd45c0a1c9cf619e63a90d62bdc63892ef92387424b855792a6cabe789aa"},
-]
-GitPython = [
-    {file = "GitPython-3.1.29-py3-none-any.whl", hash = "sha256:41eea0deec2deea139b459ac03656f0dd28fc4a3387240ec1d3c259a2c47850f"},
-    {file = "GitPython-3.1.29.tar.gz", hash = "sha256:cc36bfc4a3f913e66805a28e84703e419d9c264c1077e537b54f0e1af85dbefd"},
 ]
 grapheme = [
     {file = "grapheme-0.6.0.tar.gz", hash = "sha256:44c2b9f21bbe77cfb05835fec230bd435954275267fea1858013b102f8603cca"},
@@ -406,26 +222,6 @@ h5py = [
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
-]
-ninja = [
-    {file = "ninja-1.10.2.4-py2.py3-none-macosx_10_9_universal2.macosx_10_9_x86_64.macosx_11_0_arm64.macosx_11_0_universal2.whl", hash = "sha256:b0350784b37c5080223ec1bedc507153cc714b502c17dd5a64552e930b0dca25"},
-    {file = "ninja-1.10.2.4-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b86a4e4ba2ed999d8b10f2b3f2ed56d7457ff647268f4098dd0b63dd145ede32"},
-    {file = "ninja-1.10.2.4-py2.py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:b12cfed6382e510a597b3d08d7eec96664f7c8b8ee436eef645736c453d1c135"},
-    {file = "ninja-1.10.2.4-py2.py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:24e3bc4713667a9a1d15484ad2bb77bbaedb1e6d45254cb03f7964b8b497231a"},
-    {file = "ninja-1.10.2.4-py2.py3-none-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:3fa6e69838613815c80abcaca34681c5b7cf15bf921543e518f5c918d7098bb7"},
-    {file = "ninja-1.10.2.4-py2.py3-none-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:327c319176c5a4af21908b727b776e9f5caf275680403da632821ba071fd6296"},
-    {file = "ninja-1.10.2.4-py2.py3-none-musllinux_1_1_aarch64.whl", hash = "sha256:251fb21cd6691accd0d95e28721ad8a50a6ec0ace97f9a8de3976f39301686f6"},
-    {file = "ninja-1.10.2.4-py2.py3-none-musllinux_1_1_i686.whl", hash = "sha256:685daebd1bc21480256351000a01dfb520636832fa65efc9f121474ff640e3df"},
-    {file = "ninja-1.10.2.4-py2.py3-none-musllinux_1_1_ppc64le.whl", hash = "sha256:34c8e44f6e2e35ff9444994bfc7bf451c8d4bf15e31ad1e3ef7b06f78647b35b"},
-    {file = "ninja-1.10.2.4-py2.py3-none-musllinux_1_1_s390x.whl", hash = "sha256:b264085e409533aecb57040c5e90fbfb64db91a61575c7e637411780446412fa"},
-    {file = "ninja-1.10.2.4-py2.py3-none-musllinux_1_1_x86_64.whl", hash = "sha256:3300f3f37d62dcc7bdd19284dff9eaed7d629f4ed2725019a6ce3291c655fb83"},
-    {file = "ninja-1.10.2.4-py2.py3-none-win32.whl", hash = "sha256:5b973b1ce7075e9091db290adbbf93ba9066a94f97c369d0ff631251c633e81b"},
-    {file = "ninja-1.10.2.4-py2.py3-none-win_amd64.whl", hash = "sha256:ea245943a9849e5b1ebd74c1a4c1edd2c9801b62c0386165c7ac47623e353627"},
-    {file = "ninja-1.10.2.4.tar.gz", hash = "sha256:da7a6d9b2ed2018165fbf90068e2c64da08f2568c700fdb8abea07a245dc4664"},
-]
-nptyping = [
-    {file = "nptyping-2.3.1-py3-none-any.whl", hash = "sha256:7549bc1fb334178d0309ad1ab89e174844ebe38dd427eae2f61e7495a9bda388"},
-    {file = "nptyping-2.3.1.tar.gz", hash = "sha256:df491b7113bfe87aefb6e86dab72d7b9972f622514401bf3ca69a9b68ae80dc6"},
 ]
 numpy = [
     {file = "numpy-1.23.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:95d79ada05005f6f4f337d3bb9de8a7774f259341c70bc88047a1f7b96a4bcb2"},
@@ -486,18 +282,6 @@ pytest = [
     {file = "pytest-7.1.3-py3-none-any.whl", hash = "sha256:1377bda3466d70b55e3f5cecfa55bb7cfcf219c7964629b967c37cf0bda818b7"},
     {file = "pytest-7.1.3.tar.gz", hash = "sha256:4f365fec2dff9c1162f834d9f18af1ba13062db0c708bf7b946f8a5c76180c39"},
 ]
-setuptools = [
-    {file = "setuptools-65.5.0-py3-none-any.whl", hash = "sha256:f62ea9da9ed6289bfe868cd6845968a2c854d1427f8548d52cae02a42b4f0356"},
-    {file = "setuptools-65.5.0.tar.gz", hash = "sha256:512e5536220e38146176efb833d4a62aa726b7bbff82cfbc8ba9eaa3996e0b17"},
-]
-setuptools-scm = [
-    {file = "setuptools_scm-7.0.5-py3-none-any.whl", hash = "sha256:7930f720905e03ccd1e1d821db521bff7ec2ac9cf0ceb6552dd73d24a45d3b02"},
-    {file = "setuptools_scm-7.0.5.tar.gz", hash = "sha256:031e13af771d6f892b941adb6ea04545bbf91ebc5ce68c78aaf3fff6e1fb4844"},
-]
-smmap = [
-    {file = "smmap-5.0.0-py3-none-any.whl", hash = "sha256:2aba19d6a040e78d8b09de5c57e96207b09ed71d8e55ce0959eeee6c8e190d94"},
-    {file = "smmap-5.0.0.tar.gz", hash = "sha256:c840e62059cd3be204b0c9c9f74be2c09d5648eddd4580d9314c3ecde0b30936"},
-]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
     {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
@@ -505,12 +289,4 @@ toml = [
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
-]
-types-toml = [
-    {file = "types-toml-0.10.8.tar.gz", hash = "sha256:b7e7ea572308b1030dc86c3ba825c5210814c2825612ec679eb7814f8dd9295a"},
-    {file = "types_toml-0.10.8-py3-none-any.whl", hash = "sha256:8300fd093e5829eb9c1fba69cee38130347d4b74ddf32d0a7df650ae55c2b599"},
-]
-typing-extensions = [
-    {file = "typing_extensions-4.4.0-py3-none-any.whl", hash = "sha256:16fa4864408f655d35ec496218b85f79b3437c829e93320c7c9215ccfd92489e"},
-    {file = "typing_extensions-4.4.0.tar.gz", hash = "sha256:1511434bb92bf8dd198c12b1cc812e800d4181cfcb867674e0f8279cc93087aa"},
 ]
