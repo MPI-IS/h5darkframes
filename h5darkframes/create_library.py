@@ -30,7 +30,7 @@ def _add_to_hdf5(
     # setting the configuration of the current pictures set
     for control, value in controls.items():
         camera.reach_control(control, value, progress=progress)
-        
+
     # taking and averaging the pictures
     images: typing.List[npt.ArrayLike] = []
     for _ in range(avg_over):

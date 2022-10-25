@@ -1,4 +1,3 @@
-import alive_progress
 import typing
 
 
@@ -29,12 +28,7 @@ class Progress:
 
 
 class AliveBarProgress(Progress):
-    def __init__(
-            self,
-            duration: int,
-            nb_pics: int,
-            bar
-    ):
+    def __init__(self, duration: int, nb_pics: int, bar):
         super().__init__(duration, nb_pics)
         self._bar = bar
         self._pics = 0
@@ -48,10 +42,11 @@ class AliveBarProgress(Progress):
         duration: float,
         timeout: float,
     ) -> None:
+        duration_ = "{:0.2f}".format(duration)
         f = str(
-            f"setting {control} to {target_value} "
+            f"setting {control} to {target_value}: {current_value} "
             f"(tolerance of {tolerance}) "
-            f"running for {duration} with timeout of {timeout}"
+            f"running for {duration_} with timeout of {timeout}"
         )
         self._bar.text(f)
 

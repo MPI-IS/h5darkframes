@@ -2,6 +2,7 @@ import typing
 import itertools
 from collections import OrderedDict
 
+
 class ControlRange:
     """
     Configuration item for the method "create_hdf5", allowing the user
@@ -59,7 +60,7 @@ class ControlRange:
             name = ""
         else:
             name = f"{name}:\t"
-        return str(f"{name}{repr(self.get_values)}")
+        return str(f"{name}{repr(self.get_values())}")
 
     def __repr__(self) -> str:
         return str(
@@ -78,7 +79,7 @@ class ControlRange:
             all_values.append(prange_.get_values())
         for values in itertools.product(*all_values):
             d = OrderedDict()
-            for control, value in zip(controls.keys(),values):
-                d[control]=value
-            yield(d)
+            for control, value in zip(controls.keys(), values):
+                d[control] = value
+            yield (d)
         return None

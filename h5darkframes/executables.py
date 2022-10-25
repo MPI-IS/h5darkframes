@@ -8,13 +8,14 @@ from .create_library import library
 from .toml_config import read_config
 from .duration_estimate import estimate_total_duration
 
-_root_dir = os.getcwd()
+_root_dir = Path(os.getcwd())
+
 
 def set_root_dir(self, path: Path):
     global _root_dir
     _root_dir = path
 
-    
+
 def get_darkframes_config_path(check_exists: bool = True) -> Path:
     path = Path(_root_dir) / "darkframes.toml"
     if check_exists:
@@ -47,25 +48,23 @@ def darkframes_config(camera_class: typing.Type[Camera], **kwargs) -> Path:
 
 
 class _no_progress_bar:
-
-    def __init__(self,
-                 duration: int,
-                 dual_line: bool =True,
-                 title : str ="darkframes library creation"):
+    def __init__(
+        self,
+        duration: int,
+        dual_line: bool = True,
+        title: str = "darkframes library creation",
+    ):
         pass
 
     def __enter__(self):
         return None
 
-    def __exit__(self,_,__,___):
+    def __exit__(self, _, __, ___):
         return
 
 
 def darkframes_library(
-        camera_class: typing.Type[Camera],
-        libname: str,
-        progress_bar: bool,
-        **camera_kwargs
+    camera_class: typing.Type[Camera], libname: str, progress_bar: bool, **camera_kwargs
 ) -> Path:
 
     # path to configuration file
@@ -74,15 +73,19 @@ def darkframes_library(
     # path to library file
     path = get_darkframes_path(check_exists=False)
 
+    # if a file already exists, exiting
+    if path.is_file():
+        raise RuntimeError(f"a file {path} already exists. Please move/delete it first")
+
     # reading configuration file
     control_ranges, average_over = read_config(config_path)
 
     # configuring the camera
-    camera = camera_class.configure(config_path, **camera_kwargs)
+    camera = typing.cast(Camera, camera_class.configure(config_path, **camera_kwargs))
 
     # estimating duration and number of pics
-    duration, nb_pics = estimate_total_duration(camera,control_ranges,average_over)
-    
+    duration, nb_pics = estimate_total_duration(camera, control_ranges, average_over)
+
     # adding a progress bar
     if progress_bar:
         progress_context_manager = alive_progress.alive_bar
@@ -91,18 +94,21 @@ def darkframes_library(
 
     # creating library
     with progress_context_manager(
-            nb_pics,
-            dual_line=True,
-            title="darkframes library creation",
+        nb_pics,
+        dual_line=True,
+        title="darkframes library creation",
     ) as progress_instance:
+        progress_bar_: typing.Optional[AliveBarProgress]
         if progress_instance:
-            progress_bar = AliveBarProgress(duration, nb_pics, progress_instance)
+            progress_bar_ = AliveBarProgress(duration, nb_pics, progress_instance)
         else:
-            progress_bar = None
-        library(libname, camera, control_ranges, average_over, path, progress=progress_bar)
+            progress_bar_ = None
+        library(
+            libname, camera, control_ranges, average_over, path, progress=progress_bar_
+        )
 
     # stopping camera
     camera.stop()
-        
+
     # returning path to created file
     return path

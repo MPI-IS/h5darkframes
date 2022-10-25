@@ -4,7 +4,7 @@ import copy
 from numpy import typing as npt
 from pathlib import Path
 from .control_range import ControlRange
-from collections import OrderedDict  # type: ignore
+
 
 def _get_closest(value: int, values: typing.List[int]) -> int:
     """
@@ -47,26 +47,25 @@ class ImageLibrary:
         self._hdf5_file = h5py.File(hdf5_path, "r")
         self._controls = eval(self._hdf5_file.attrs["controls"])
 
-    def configs(self)->typing.List[typing.Dict[str,int]]:
-
-        def _add(controls, index, group, current, list_)->None:
-            if index==len(controls):
+    def configs(self) -> typing.List[typing.Dict[str, int]]:
+        def _add(controls, index, group, current, list_) -> None:
+            if index == len(controls):
                 list_.append(current)
                 return
             for value in group.keys():
                 current_ = copy.deepcopy(current)
                 current_[controls[index]] = int(value)
-                _add(controls,index+1,group[value],current_,list_)
-            
+                _add(controls, index + 1, group[value], current_, list_)
+
         controls = list(self._controls.keys())
         index = 0
         group = self._hdf5_file
-        r: typing.List[typing.Dict[str,int]] = []
+        r: typing.List[typing.Dict[str, int]] = []
 
         _add(controls, index, group, {}, r)
 
         return r
-        
+
     def params(self) -> typing.OrderedDict[str, ControlRange]:
         """
         Returns the range of values that have been used to generate

@@ -19,28 +19,28 @@ def test_control_range_get_values():
 
 
 def test_reach_control():
-    
+
     controls = {
         "width": dark.ControlRange(60, 100, 20),
         "height": dark.ControlRange(10, 13, 1, timeout=2),
     }
     with dark.DummyCamera(controls, value=3) as camera:
-        camera.reach_control("width",60)
-        assert camera.get_control("width")==60
-        camera.reach_control("height",12)
-        assert camera.get_control("height")==12
+        camera.reach_control("width", 60)
+        assert camera.get_control("width") == 60
+        camera.reach_control("height", 12)
+        assert camera.get_control("height") == 12
         start = time.time()
-        camera.reach_control("height",12)
+        camera.reach_control("height", 12)
         end = time.time()
-        assert camera.get_control("height")==12
-        assert end-start < 0.1
+        assert camera.get_control("height") == 12
+        assert end - start < 0.1
 
 
 def test_create_library():
 
     controls = OrderedDict()
     controls["width"] = dark.ControlRange(60, 100, 20)
-    controls["height"] = dark.ControlRange(10, 13, 1, timeout=2.)
+    controls["height"] = dark.ControlRange(10, 13, 1, timeout=2.0)
 
     avg_over = 3
 
@@ -54,10 +54,10 @@ def test_create_library():
 
             with dark.ImageLibrary(path) as il:
                 configs = il.configs()
-                for width in (60, 80,100):
-                    for height in (10,11,12,13):
-                        assert {"width":width, "height":height} in configs
-                
+                for width in (60, 80, 100):
+                    for height in (10, 11, 12, 13):
+                        assert {"width": width, "height": height} in configs
+
             with dark.ImageLibrary(path) as il:
 
                 params = il.params()

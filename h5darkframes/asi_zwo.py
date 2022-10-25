@@ -8,6 +8,7 @@ from .camera import Camera
 from .control_range import ControlRange
 from .toml_config import read_config
 
+
 class AsiZwoCamera(Camera):
     def __init__(
         self, index, control_ranges: typing.Mapping[str, ControlRange]
@@ -22,16 +23,22 @@ class AsiZwoCamera(Camera):
         image = self._camera.capture()
         return image.get_image()
 
+    def get_configuration(self) -> typing.Mapping[str, int]:
+        """
+        Returns the current configuration of the camera
+        """
+        return self._camera.to_dict()
+
     @classmethod
-    def configure(cls, path: Path, index: int=0) -> object:
+    def configure(cls, path: Path, **kwargs) -> object:
         """
         Configure the camera from a toml
         configuration file.
         """
         if not path.is_file():
             raise FileNotFoundError(str(path))
-        control_ranges, _ = read_config(config_path)
-        instance = cls(index,control_ranges)
+        control_ranges, _ = read_config(path)
+        instance = cls(kwargs["index"], control_ranges)
         content = toml.load(str(path))
         try:
             config = content["camera"]
@@ -41,7 +48,7 @@ class AsiZwoCamera(Camera):
             )
         instance._camera.configure_from_toml(config)
         return instance
-        
+
     def estimate_picture_time(self, controls: typing.Mapping[str, int]) -> float:
         """
         estimation of how long it will take for a picture
@@ -66,7 +73,11 @@ class AsiZwoCamera(Camera):
         Getting the configuration of the camera
         """
         control = control if control != "TargetTemp" else "Temperature"
-        return self._camera.get_controls()[control].value
+        v = self._camera.get_controls()[control].value
+        if control == "Temperature":
+            return int(v / 10.0 + 0.5)
+        else:
+            return v
 
     @classmethod
     def generate_config_file(cls, path: Path, **kwargs):
@@ -88,7 +99,7 @@ class AsiZwoCamera(Camera):
             )
         camera = zwo.Camera(kwargs["index"])
         r: typing.Dict[str, typing.Any] = {}
-        r["darkframes"]
+        r["darkframes"] = {}
         r["darkframes"]["average_over"] = 5
         control_ranges = OrderedDict()
         control_ranges["TargetTemp"] = ControlRange(-15, 15, 3, 1, 600)

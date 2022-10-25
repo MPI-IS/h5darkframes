@@ -10,7 +10,10 @@ def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
         try:
             f()
         except Exception as e:
-            print(f"error:\n{e.__class__.__name__}: {e}\n")
+            import traceback
+
+            print(traceback.format_exc())
+            print(f"error ({e.__class__.__name__}):\n{e}\n")
             exit(1)
         print()
         exit(0)
@@ -18,22 +21,15 @@ def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
     return run
 
 
-def zwo_asi(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
-    def run():
-        try:
-            from .asi_zwo import AsiZwoCamera
-        except ImportError:
-            raise ImportError(
-                "failed to import camera_zwo_asi. See: https://github.com/MPI-IS/camera_zwo_asi"
-            )
-        f()
-
-    return run
-
-
 @execute
-@zwo_asi
 def asi_zwo_darkframes_config():
+
+    try:
+        from .asi_zwo import AsiZwoCamera
+    except ImportError:
+        raise ImportError(
+            "failed to import camera_zwo_asi. See: https://github.com/MPI-IS/camera_zwo_asi"
+        )
 
     # reading camera index
     parser = argparse.ArgumentParser()
@@ -49,7 +45,7 @@ def asi_zwo_darkframes_config():
     else:
         index = 0
 
-    path = executables.darkframes_config(camera,index=index)
+    path = executables.darkframes_config(AsiZwoCamera, index=index)
 
     print(
         f"Generated the darkframes configuration file {path}.\n"
@@ -59,43 +55,31 @@ def asi_zwo_darkframes_config():
 
 
 @execute
-@zwo_asi
 def asi_zwo_darkframes_library():
 
-    # in case there are more than 1 camera connected
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--index",
-        type=int,
-        required=False,
-        help="index of the camera to use (0 if not specified)",
-    )
+    try:
+        from .asi_zwo import AsiZwoCamera
+    except ImportError:
+        raise ImportError(
+            "failed to import camera_zwo_asi. See: https://github.com/MPI-IS/camera_zwo_asi"
+        )
 
     # the user must give a name to the library
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--name",
         type=str,
         required=True,
         help="name of the library",
     )
-
-    # handle to the camera
     args = parser.parse_args()
-    if args.index:
-        index = args.index
-    else:
-        index = 0
-    camera_class = 
-    camera = Camera(index)  # noqa: F821
 
-    # generating the library
-    with alive_progress.alive_bar(
-            estimated_duration,
-            dual_line=True,
-            title="darkframes library creation",
-    ) as alive:
-        progress_bar = AliveProgressBar(duration, nb_pics, alive)
-        path = executables.darkframes_library(camera, args.name, progress_bar)
+    # which camera we use
+    camera_class = AsiZwoCamera
+
+    # creating the library
+    progress_bar = True
+    path = executables.darkframes_library(camera_class, args.name, progress_bar)
 
     # informing user
     print(f"\ncreated the file {path}\n")
@@ -126,7 +110,7 @@ def darkframes_info():
     ]
 
     for name, cr in control_ranges.items():
-        r.append(str(cr, name))
+        r.append(f"{name}: {cr}")
 
     print()
     print("\n".join(r))

@@ -10,29 +10,29 @@ from .control_range import ControlRange
 from .camera import Camera
 from .toml_config import read_config
 
-class _Height:
 
-    def __init__(self, value: int)->None:
+class _Height:
+    def __init__(self, value: int) -> None:
         self._value = value
         self._desired = value
         self._lock = threading.Lock()
         self._running = False
         self._thread = threading.Thread(target=self._run)
         self._thread.start()
-        
-    def set(self, value)->None:
+
+    def set(self, value) -> None:
         with self._lock:
             self._desired = value
 
-    def get(self)->int:
+    def get(self) -> int:
         with self._lock:
             return self._value
-            
-    def stop(self)->None:
+
+    def stop(self) -> None:
         self._running = False
         self._thread.join()
-        
-    def _run(self)->None:
+
+    def _run(self) -> None:
         self._running = True
         while self._running:
             with self._lock:
@@ -43,8 +43,7 @@ class _Height:
                         self._value += 1
             time.sleep(0.1)
 
-    
-            
+
 class DummyCamera(Camera):
     """
     dummy camera, for testing
@@ -60,7 +59,7 @@ class DummyCamera(Camera):
 
     def stop(self):
         self._height.stop()
-        
+
     def picture(self) -> npt.ArrayLike:
         """
         Taking a picture
@@ -70,14 +69,14 @@ class DummyCamera(Camera):
         return numpy.zeros(shape) + self._value
 
     @classmethod
-    def configure(cls, path: Path, value: int = 0) -> object:
+    def configure(cls, path: Path, **kwargs) -> object:
         """
         Configure the camera
         """
         if not path.is_file():
             raise FileNotFoundError(str(path))
         control_ranges, _ = read_config(path)
-        instance = cls(control_ranges,value)
+        instance = cls(control_ranges, kwargs["value"])
         content = toml.load(str(path))
         try:
             config = content["camera"]
@@ -87,7 +86,6 @@ class DummyCamera(Camera):
             )
         instance._value = int(config["value"])
         return instance
-        
 
     def get_configuration(self) -> typing.Mapping[str, int]:
         """
@@ -111,7 +109,7 @@ class DummyCamera(Camera):
             setattr(self, control, value)
         else:
             self._height.set(value)
-            
+
     def get_control(self, control: str) -> int:
         """
         Getting the configuration of the camera
@@ -120,7 +118,7 @@ class DummyCamera(Camera):
             return getattr(self, control)
         else:
             return self._height.get()
-        
+
     @classmethod
     def generate_config_file(cls, path: Path, **kwargs) -> None:
         """
@@ -131,8 +129,8 @@ class DummyCamera(Camera):
         r["darkframes"] = {}
         r["darkframes"]["average_over"] = 5
         control_ranges = OrderedDict()
-        control_ranges["width"] = ControlRange(10, 20, 5, 0, 10)
         control_ranges["height"] = ControlRange(100, 200, 50, 0, 10)
+        control_ranges["width"] = ControlRange(10, 20, 5, 0, 10)
         r["darkframes"]["controllables"] = OrderedDict()
         for name, control_range in control_ranges.items():
             r["darkframes"]["controllables"][name] = control_range.to_dict()
@@ -143,5 +141,5 @@ class DummyCamera(Camera):
     def __enter__(self):
         return self
 
-    def __exit__(self,_,__,___):
+    def __exit__(self, _, __, ___):
         self.stop()
