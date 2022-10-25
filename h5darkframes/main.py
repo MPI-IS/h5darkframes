@@ -21,7 +21,7 @@ def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
 def zwo_asi(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
     def run():
         try:
-            import camera_zwo_asi as zwo  # noqa: F401
+            from .asi_zwo import AsiZwoCamera
         except ImportError:
             raise ImportError(
                 "failed to import camera_zwo_asi. See: https://github.com/MPI-IS/camera_zwo_asi"
@@ -35,7 +35,7 @@ def zwo_asi(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
 @zwo_asi
 def asi_zwo_darkframes_config():
 
-    # opening the camera
+    # reading camera index
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--index",
@@ -48,9 +48,8 @@ def asi_zwo_darkframes_config():
         index = args.index
     else:
         index = 0
-    camera = zwo.Camera(index)  # noqa: F821
 
-    path = executables.darkframes_config(camera)
+    path = executables.darkframes_config(camera,index=index)
 
     print(
         f"Generated the darkframes configuration file {path}.\n"
@@ -86,13 +85,17 @@ def asi_zwo_darkframes_library():
         index = args.index
     else:
         index = 0
+    camera_class = 
     camera = Camera(index)  # noqa: F821
 
-    # adding a progress bar
-    progress_bar = True
-
     # generating the library
-    path = executables.darkframes_library(camera, args.name, progress_bar)
+    with alive_progress.alive_bar(
+            estimated_duration,
+            dual_line=True,
+            title="darkframes library creation",
+    ) as alive:
+        progress_bar = AliveProgressBar(duration, nb_pics, alive)
+        path = executables.darkframes_library(camera, args.name, progress_bar)
 
     # informing user
     print(f"\ncreated the file {path}\n")

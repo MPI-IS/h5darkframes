@@ -50,8 +50,7 @@ class ImageLibrary:
     def configs(self)->typing.List[typing.Dict[str,int]]:
 
         def _add(controls, index, group, current, list_)->None:
-            print(controls[index],current,list(group.keys()))
-            if index==len(controls)-1:
+            if index==len(controls):
                 list_.append(current)
                 return
             for value in group.keys():

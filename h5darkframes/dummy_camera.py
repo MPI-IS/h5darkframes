@@ -8,6 +8,7 @@ from numpy import typing as npt
 from pathlib import Path
 from .control_range import ControlRange
 from .camera import Camera
+from .toml_config import read_config
 
 class _Height:
 
@@ -64,16 +65,19 @@ class DummyCamera(Camera):
         """
         Taking a picture
         """
-        time.sleep(0.01)
+        time.sleep(0.001)
         shape = (self.width, self._height.get())
         return numpy.zeros(shape) + self._value
 
-    def configure(self, path: Path) -> None:
+    @classmethod
+    def configure(cls, path: Path, value: int = 0) -> object:
         """
         Configure the camera
         """
         if not path.is_file():
             raise FileNotFoundError(str(path))
+        control_ranges, _ = read_config(path)
+        instance = cls(control_ranges,value)
         content = toml.load(str(path))
         try:
             config = content["camera"]
@@ -81,7 +85,9 @@ class DummyCamera(Camera):
             raise KeyError(
                 f"failed to find the key 'camera' in the configuration file {path}"
             )
-        self._value = int(config["value"])
+        instance._value = int(config["value"])
+        return instance
+        
 
     def get_configuration(self) -> typing.Mapping[str, int]:
         """
@@ -95,7 +101,7 @@ class DummyCamera(Camera):
         to be taken (typically relevant if one of the control
         is the exposure time
         """
-        return 0.01
+        return 0.001
 
     def set_control(self, control: str, value: int) -> None:
         """

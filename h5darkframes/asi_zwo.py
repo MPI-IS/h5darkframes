@@ -6,7 +6,7 @@ from pathlib import Path
 import camera_zwo_asi as zwo
 from .camera import Camera
 from .control_range import ControlRange
-
+from .toml_config import read_config
 
 class AsiZwoCamera(Camera):
     def __init__(
@@ -22,13 +22,16 @@ class AsiZwoCamera(Camera):
         image = self._camera.capture()
         return image.get_image()
 
-    def configure(self, path: Path) -> None:
+    @classmethod
+    def configure(cls, path: Path, index: int=0) -> object:
         """
         Configure the camera from a toml
         configuration file.
         """
         if not path.is_file():
             raise FileNotFoundError(str(path))
+        control_ranges, _ = read_config(config_path)
+        instance = cls(index,control_ranges)
         content = toml.load(str(path))
         try:
             config = content["camera"]
@@ -36,8 +39,9 @@ class AsiZwoCamera(Camera):
             raise KeyError(
                 f"failed to find the key 'camera' in the configuration file {path}"
             )
-        self._camera.configure_from_toml(config)
-
+        instance._camera.configure_from_toml(config)
+        return instance
+        
     def estimate_picture_time(self, controls: typing.Mapping[str, int]) -> float:
         """
         estimation of how long it will take for a picture

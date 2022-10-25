@@ -72,15 +72,13 @@ class ControlRange:
         cls,
         controls: typing.Mapping[str, object],  # object: instance of ControlRange
     ) -> typing.Generator[typing.OrderedDict[str, int], None, None]:
-        sorted_controls = sorted(controls.keys())
-        controls_ = [controls[key] for key in sorted_controls]
         all_values: typing.List[typing.Iterable] = []
-        for prange in controls_:
+        for prange in controls.values():
             prange_ = typing.cast(ControlRange, prange)
             all_values.append(prange_.get_values())
         for values in itertools.product(*all_values):
             d = OrderedDict()
-            for control, value in zip(sorted_controls,values):
+            for control, value in zip(controls.keys(),values):
                 d[control]=value
             yield(d)
         return None

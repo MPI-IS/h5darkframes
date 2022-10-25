@@ -55,7 +55,7 @@ def read_config(path: Path) -> typing.Tuple[typing.OrderedDict[str, ControlRange
             f"to int: {e}"
         )
 
-    controllables = content["controllables"]
+    controllables = config["controllables"]
     d = OrderedDict()
     for name, values in controllables.items():
         d[name] = _get_range(name, values)

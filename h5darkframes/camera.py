@@ -26,12 +26,16 @@ class Camera:
         """
         raise NotImplementedError()
 
-    def configure(self, path: Path) -> None:
+    @classmethod
+    def configure(cls, path: Path, **kwargs) -> object:  # object will be an instance of Camera
         """
-        Configure the camera
+        Instantiate and configure the camera
         """
         raise NotImplementedError()
 
+    def stop(self)->None:
+        return
+    
     def get_configuration(self) -> typing.Mapping[str, int]:
         """
         Returns the current configuration of the camera

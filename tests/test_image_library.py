@@ -54,7 +54,10 @@ def test_create_library():
 
             with dark.ImageLibrary(path) as il:
                 configs = il.configs()
-            
+                for width in (60, 80,100):
+                    for height in (10,11,12,13):
+                        assert {"width":width, "height":height} in configs
+                
             with dark.ImageLibrary(path) as il:
 
                 params = il.params()
