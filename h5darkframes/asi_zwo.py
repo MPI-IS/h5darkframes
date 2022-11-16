@@ -103,7 +103,7 @@ class AsiZwoCamera(Camera):
         r["darkframes"]["average_over"] = 5
         control_ranges = OrderedDict()
         control_ranges["TargetTemp"] = ControlRange(-15, 15, 3, 1, 600)
-        control_ranges["Exposure"] = ControlRange(1000000, 30000000, 5000000, 1, 0.1)
+        control_ranges["Exposure"] = ControlRange(1000000, 30000000, 4000000, 1, 0.1)
         control_ranges["Gain"] = ControlRange(200, 400, 100, 1, 0.1)
         r["darkframes"]["controllables"] = OrderedDict()
         for name, control_range in control_ranges.items():

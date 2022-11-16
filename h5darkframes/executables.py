@@ -1,6 +1,7 @@
 import os
 import typing
 import alive_progress
+import logging
 from pathlib import Path
 from .camera import Camera
 from .progress import AliveBarProgress
@@ -35,6 +36,11 @@ def get_darkframes_path(check_exists: bool = True) -> Path:
                 "\ncould not find a file 'darkframes.hdf5' in the current "
                 "directory.\n"
             )
+    return path
+
+
+def get_logs_path() -> Path:
+    path = Path(_root_dir) / "darkframes.logs"
     return path
 
 
@@ -91,6 +97,12 @@ def darkframes_library(
         progress_context_manager = alive_progress.alive_bar
     else:
         progress_context_manager = _no_progress_bar
+
+    # logging what is happening
+    # in a file (in the current directory)
+    logfile = get_logs_path()
+    file_handler = logging.FileHandler(logfile)
+    logging.basicConfig(level=logging.INFO, handlers=(file_handler,))
 
     # creating library
     with progress_context_manager(

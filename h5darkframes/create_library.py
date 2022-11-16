@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from pathlib import Path
+import logging
 import h5py
 import typing
 import numpy as np
@@ -7,6 +8,9 @@ from numpy import typing as npt
 from .camera import Camera
 from .control_range import ControlRange
 from .progress import Progress
+
+
+_logger = logging.getLogger(__name__)
 
 
 def _add_to_hdf5(
@@ -21,30 +25,41 @@ def _add_to_hdf5(
     to the hdf5 file, with 'path'
     like hdf5_file[param1.value][param2.value][param3.value]...
     Before taking the image, the camera's configuration is set accordingly.
-    Returns the estimated duration taken by the function to complete.
     """
+
+    _logger.info(f"creating darkframe for {repr(controls)}")
 
     # for the progress feedback
     estimated_duration = camera.estimate_picture_time(controls)
 
     # setting the configuration of the current pictures set
     for control, value in controls.items():
+        _logger.info(f"{control}: reaching value of {value}")
         camera.reach_control(control, value, progress=progress)
 
     # taking and averaging the pictures
     images: typing.List[npt.ArrayLike] = []
     for _ in range(avg_over):
+        _logger.debug("taking picture")
         images.append(camera.picture())
         if progress is not None:
             progress.picture_taken_feedback(controls, estimated_duration, 1)
     image = np.mean(images, axis=0)  # type: ignore
 
     # adding the image to the hdf5 file
+    report: typing.List[str] = []
     group = hdf5_file
     for control in controls.keys():
         value = camera.get_control(control)
+        report.append(f"{control}: {value}")
         group = group.require_group(str(value))
-    group.create_dataset("image", data=image)
+    report_ = ", ".join(report)
+    try:
+        _logger.info(f"creating dataset for {report_}")
+        group.create_dataset("image", data=image)
+    except ValueError as e:
+        _logger.error(f"failed to create dataset for {report_}: {e}")
+        pass
 
     # add the camera current configuration to the group
     group.attrs["camera_config"] = repr(camera.get_configuration())
