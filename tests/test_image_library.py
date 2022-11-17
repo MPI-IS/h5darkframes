@@ -24,7 +24,7 @@ def test_reach_control():
         "width": dark.ControlRange(60, 100, 20),
         "height": dark.ControlRange(10, 13, 1, timeout=2),
     }
-    with dark.DummyCamera(controls, value=3) as camera:
+    with dark.DummyCamera(controls, value=3, dynamic=True) as camera:
         camera.reach_control("width", 60)
         assert camera.get_control("width") == 60
         camera.reach_control("height", 12)
@@ -88,3 +88,38 @@ def test_create_library():
                 image, camera_config = il.get(desired)
                 assert camera_config["width"] == 80
                 assert camera_config["height"] == 10
+
+
+def test_update_library():
+
+    controls = OrderedDict()
+    controls["width"] = dark.ControlRange(60, 100, 20)
+    controls["height"] = dark.ControlRange(10, 13, 1, timeout=2.0)
+
+    avg_over = 3
+
+    with dark.DummyCamera(controls, value=3, dynamic=False) as camera:
+
+        with tempfile.TemporaryDirectory() as tmp:
+
+            # creating a library
+            path = Path(tmp) / "test.hdf5"
+            dark.library("testlib", camera, controls, avg_over, path, progress=None)
+            with dark.ImageLibrary(path) as il:
+                configs = il.configs()
+                assert il.name() == "testlib"
+            for width in (60, 80, 100):
+                for height in (10, 11, 12, 13):
+                    assert {"width": width, "height": height} in configs
+
+            # updating the library: the control ranges are wider
+            controls = OrderedDict()
+            controls["width"] = dark.ControlRange(60, 140, 20)
+            controls["height"] = dark.ControlRange(8, 13, 1, timeout=2.0)
+            dark.library("testlib2", camera, controls, avg_over, path, progress=None)
+            with dark.ImageLibrary(path) as il:
+                configs = il.configs()
+                assert il.name() == "testlib2"
+            for width in (60, 80, 100, 120, 140):
+                for height in (8, 9, 10, 11, 12, 13):
+                    assert {"width": width, "height": height} in configs

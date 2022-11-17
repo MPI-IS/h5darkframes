@@ -74,12 +74,17 @@ def asi_zwo_darkframes_library():
     )
     args = parser.parse_args()
 
+    # using the first camera
+    camera_kwargs = {"index": 0}
+
     # which camera we use
     camera_class = AsiZwoCamera
 
     # creating the library
     progress_bar = True
-    path = executables.darkframes_library(camera_class, args.name, progress_bar)
+    path = executables.darkframes_library(
+        camera_class, args.name, progress_bar, **camera_kwargs
+    )
 
     # informing user
     print(f"\ncreated the file {path}\n")
@@ -91,30 +96,35 @@ def darkframes_info():
     # path to configuration file
     path = executables.get_darkframes_path()
 
-    library = ImageLibrary(path)
+    with ImageLibrary(path) as library:
 
-    library_name = library.name()
+        library_name = library.name()
 
-    control_ranges = library.params()
+        control_ranges = library.params()
 
-    nb_pics = 1
-    for cr in control_ranges.values():
-        nb_pics = nb_pics * len(cr.get_values())
+        nb_pics = 1
+        for cr in control_ranges.values():
+            nb_pics = nb_pics * len(cr.get_values())
 
-    r = [
-        str(
-            f"Library: {library_name}\n"
-            f"Image Library of {nb_pics} pictures.\n"
-            f"parameters\n{'-'*10}"
-        )
-    ]
+        r = [
+            str(
+                f"Library: {library_name}\n"
+                f"Image Library of {nb_pics} pictures.\n\n"
+                f"parameters\n{'-'*10}"
+            )
+        ]
 
-    for name, cr in control_ranges.items():
-        r.append(f"{name}: {cr}")
+        for name, cr in control_ranges.items():
+            r.append(f"{name}: {cr}")
 
-    print()
-    print("\n".join(r))
-    print()
+        configs = library.configs()
+        r.append(f"\nconfigurations\n{'-'*14}")
+        for config in configs:
+            r.append("\t".join([f"{key}: {value}" for key, value in config.items()]))
+
+        print()
+        print("\n".join(r))
+        print()
 
 
 @execute

@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from pathlib import Path
+import logging
 import h5py
 import typing
 import numpy as np
@@ -7,6 +8,41 @@ from numpy import typing as npt
 from .camera import Camera
 from .control_range import ControlRange
 from .progress import Progress
+
+_logger = logging.getLogger("h5darkframes")
+
+
+def _get_group(
+    hdf5_file: h5py.File, controls: typing.OrderedDict[str, int], create: bool
+) -> typing.Tuple[typing.Optional[h5py.File], bool]:
+    """
+    Returns the group in the hdf5 file corresponding
+    to the controls, and a boolean indicating if the
+    group was created (always 'False' if 'create' is False).
+
+    e.g. if controls is (and 'create' is False):
+
+    ```python
+    controls = {'a':1,'b':2}
+    ```
+
+    returns hdf5_file[1][2], False.
+
+    Returns None,False if 'create' is False and no such group.
+    """
+
+    group = hdf5_file
+    created = False
+    for _, value in controls.items():
+        if str(value) in group:
+            group = group[str(value)]
+        else:
+            if create:
+                group = group.require_group(str(value))
+                created = True
+            else:
+                return None, False
+    return group, created
 
 
 def _add_to_hdf5(
@@ -21,25 +57,57 @@ def _add_to_hdf5(
     to the hdf5 file, with 'path'
     like hdf5_file[param1.value][param2.value][param3.value]...
     Before taking the image, the camera's configuration is set accordingly.
-    Returns the estimated duration taken by the function to complete.
     """
+
+    _logger.info(f"creating darkframe for {repr(controls)}")
 
     # for the progress feedback
     estimated_duration = camera.estimate_picture_time(controls)
 
+    # the darkframe for this control set already exists, exit
+    create = False
+    if _get_group(hdf5_file, controls, create)[0] is not None:
+        _logger.info(f"data already exists for {repr(controls)}, skipping")
+        if progress is not None:
+            progress.picture_taken_feedback(controls, estimated_duration, 1)
+        return
+
     # setting the configuration of the current pictures set
     for control, value in controls.items():
+        _logger.info(f"{control}: reaching value of {value}")
         camera.reach_control(control, value, progress=progress)
+
+    # the control values we reached (which may not be the one
+    # we asked for)
+    applied_controls = OrderedDict()
+    for control in controls.keys():
+        applied_controls[control] = camera.get_control(control)
+    _logger.info(f"reached controls: {repr(applied_controls)}")
+
+    # do the data for these reached controls already exist ?
+    # if so, skipping
+    create = True
+    group, created = _get_group(hdf5_file, applied_controls, create)
+    if group is None or not created:
+        _logger.info(f"data already exists for {repr(applied_controls)}, skipping")
+        if progress is not None:
+            progress.picture_taken_feedback(controls, estimated_duration, 1)
+        return
 
     # taking and averaging the pictures
     images: typing.List[npt.ArrayLike] = []
     for _ in range(avg_over):
+        _logger.debug("taking picture")
         images.append(camera.picture())
         if progress is not None:
             progress.picture_taken_feedback(controls, estimated_duration, 1)
     image = np.mean(images, axis=0)  # type: ignore
 
     # adding the image to the hdf5 file
+    report: str = ", ".join(
+        [f"{control}: {value}" for control, value in applied_controls.items()]
+    )
+    _logger.info(f"creating dataset for {report}")
     group = hdf5_file
     for control in controls.keys():
         value = camera.get_control(control)
@@ -72,7 +140,7 @@ def library(
     """
 
     # opening the hdf5 file in write mode
-    with h5py.File(hdf5_path, "w") as hdf5_file:
+    with h5py.File(hdf5_path, "a") as hdf5_file:
 
         # adding the name to the hdf5 file
         hdf5_file.attrs["name"] = name

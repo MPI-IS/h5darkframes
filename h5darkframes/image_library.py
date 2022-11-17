@@ -49,6 +49,11 @@ class ImageLibrary:
         self._controls = eval(self._hdf5_file.attrs["controls"])
 
     def configs(self) -> typing.List[typing.Dict[str, int]]:
+        """
+        Return the list of all configurations to which a corresponding
+        image is stored in the library.
+        """
+
         def _add(controls, index, group, current, list_) -> None:
             if index == len(controls):
                 list_.append(current)
@@ -62,9 +67,7 @@ class ImageLibrary:
         index = 0
         group = self._hdf5_file
         r: typing.List[typing.Dict[str, int]] = []
-
         _add(controls, index, group, {}, r)
-
         return r
 
     def params(self) -> typing.OrderedDict[str, ControlRange]:
@@ -101,7 +104,7 @@ class ImageLibrary:
 
         Returns
         -------
-        Tuple: image of the library and its related camera configuration
+        Image of the library and its related camera configuration
         """
 
         for control in controls:

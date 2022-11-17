@@ -12,15 +12,25 @@ from .toml_config import read_config
 
 
 class _Height:
-    def __init__(self, value: int) -> None:
+    def __init__(self, value: int, dynamic: bool) -> None:
         self._value = value
         self._desired = value
+        self._dynamic = dynamic
         self._lock = threading.Lock()
-        self._running = False
-        self._thread = threading.Thread(target=self._run)
-        self._thread.start()
+        if self._dynamic:
+            self._running = False
+            self._thread = threading.Thread(target=self._run)
+            self._thread.start()
 
     def set(self, value) -> None:
+        # not dynamic, directly setting the value
+        if not self._dynamic:
+            self._value = value
+            return
+        # dynamic: setting a desired value,
+        # (the running thread will have value
+        # reaching the desired value over some
+        # time lapse)
         with self._lock:
             self._desired = value
 
@@ -29,8 +39,9 @@ class _Height:
             return self._value
 
     def stop(self) -> None:
-        self._running = False
-        self._thread.join()
+        if self._dynamic:
+            self._running = False
+            self._thread.join()
 
     def _run(self) -> None:
         self._running = True
@@ -50,11 +61,15 @@ class DummyCamera(Camera):
     """
 
     def __init__(
-        self, control_ranges: typing.Mapping[str, ControlRange], value: int = 0
+        self,
+        control_ranges: typing.Mapping[str, ControlRange],
+        value: int = 0,
+        dynamic: bool = True,
     ) -> None:
         super().__init__(control_ranges)
         self.width = 0
-        self._height = _Height(0)
+        self._height = _Height(0, dynamic)
+
         self._value = value
 
     def stop(self):
@@ -76,18 +91,17 @@ class DummyCamera(Camera):
         if not path.is_file():
             raise FileNotFoundError(str(path))
         control_ranges, _ = read_config(path)
-        instance = cls(control_ranges, kwargs["value"])
         content = toml.load(str(path))
         try:
-            config = content["camera"]
+            content["camera"]
         except KeyError:
             raise KeyError(
                 f"failed to find the key 'camera' in the configuration file {path}"
             )
-        instance._value = int(config["value"])
+        instance = cls(control_ranges, content["camera"]["value"])
         return instance
 
-    def get_configuration(self) -> typing.Mapping[str, int]:
+    def get_configuration(self) -> typing.Dict[str, int]:
         """
         Returns the current configuration of the camera
         """
