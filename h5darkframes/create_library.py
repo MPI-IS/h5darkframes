@@ -9,6 +9,7 @@ from .camera import Camera
 from .control_range import ControlRange
 from .progress import Progress
 
+_logger = logging.getLogger("h5darkframes")
 
 
 def _get_group(
@@ -42,7 +43,8 @@ def _get_group(
             else:
                 return None, False
     return group, created
-    
+
+
 def _add_to_hdf5(
     camera: Camera,
     controls: typing.OrderedDict[str, int],

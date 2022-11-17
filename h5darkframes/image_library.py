@@ -53,6 +53,7 @@ class ImageLibrary:
         Return the list of all configurations to which a corresponding
         image is stored in the library.
         """
+
         def _add(controls, index, group, current, list_) -> None:
             if index == len(controls):
                 list_.append(current)
