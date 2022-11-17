@@ -69,6 +69,19 @@ class _no_progress_bar:
         return
 
 
+def _append_user_feedback(path: Path) -> bool:
+    question = str(
+        f"a file {path} already exists. "
+        "It will be updated with new pictures. Continue ? [y/n]"
+    )
+    while True:
+        answer = input(question)
+        if answer.lower().strip() == "y":
+            return True
+        if answer.lower().strip() == "n":
+            return False
+
+
 def darkframes_library(
     camera_class: typing.Type[Camera], libname: str, progress_bar: bool, **camera_kwargs
 ) -> Path:
@@ -81,7 +94,9 @@ def darkframes_library(
 
     # if a file already exists, exiting
     if path.is_file():
-        raise RuntimeError(f"a file {path} already exists. Please move/delete it first")
+        append = _append_user_feedback(path)
+        if not append:
+            raise RuntimeError("user exit")
 
     # reading configuration file
     control_ranges, average_over = read_config(config_path)
