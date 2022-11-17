@@ -43,7 +43,6 @@ def get_logs_path() -> Path:
     path = Path(_root_dir) / "darkframes.logs"
     return path
 
-
 def darkframes_config(camera_class: typing.Type[Camera], **kwargs) -> Path:
     # path to configuration file
     path = get_darkframes_config_path(check_exists=False)
@@ -67,8 +66,7 @@ class _no_progress_bar:
 
     def __exit__(self, _, __, ___):
         return
-
-
+        
 def _append_user_feedback(path: Path) -> bool:
     question = str(
         f"a file {path} already exists. "
@@ -80,7 +78,6 @@ def _append_user_feedback(path: Path) -> bool:
             return True
         if answer.lower().strip() == "n":
             return False
-
 
 def darkframes_library(
     camera_class: typing.Type[Camera], libname: str, progress_bar: bool, **camera_kwargs
@@ -97,6 +94,7 @@ def darkframes_library(
         append = _append_user_feedback(path)
         if not append:
             raise RuntimeError("user exit")
+        raise RuntimeError(f"a file {path} already exists. Please move/delete it first")
 
     # reading configuration file
     control_ranges, average_over = read_config(config_path)

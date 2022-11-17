@@ -10,8 +10,6 @@ from .control_range import ControlRange
 from .progress import Progress
 
 
-_logger = logging.getLogger(__name__)
-
 
 def _get_group(
     hdf5_file: h5py.File, controls: typing.OrderedDict[str, int], create: bool
@@ -44,8 +42,7 @@ def _get_group(
             else:
                 return None, False
     return group, created
-
-
+    
 def _add_to_hdf5(
     camera: Camera,
     controls: typing.OrderedDict[str, int],
@@ -109,6 +106,10 @@ def _add_to_hdf5(
         [f"{control}: {value}" for control, value in applied_controls.items()]
     )
     _logger.info(f"creating dataset for {report}")
+    group = hdf5_file
+    for control in controls.keys():
+        value = camera.get_control(control)
+        group = group.require_group(str(value))
     group.create_dataset("image", data=image)
 
     # add the camera current configuration to the group
