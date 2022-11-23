@@ -6,7 +6,15 @@ from .control_range import ControlRange
 from .progress import Progress
 
 
-class Camera:
+class ImageTaker:
+    def picture(self) -> npt.ArrayLike:
+        """
+        Taking a picture
+        """
+        raise NotImplementedError()
+
+
+class Camera(ImageTaker):
     """
     Abstract superclass for a configurable camera.
     """
@@ -19,12 +27,6 @@ class Camera:
         self._set_values: typing.Dict[str, typing.Optional[int]] = {
             control: None for control in control_ranges.keys()
         }
-
-    def picture(self) -> npt.ArrayLike:
-        """
-        Taking a picture
-        """
-        raise NotImplementedError()
 
     @classmethod
     def configure(

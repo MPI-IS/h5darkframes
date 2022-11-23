@@ -97,7 +97,6 @@ def darkframes_library(
         append = _append_user_feedback(path)
         if not append:
             raise RuntimeError("user exit")
-        raise RuntimeError(f"a file {path} already exists. Please move/delete it first")
 
     # reading configuration file
     control_ranges, average_over = read_config(config_path)

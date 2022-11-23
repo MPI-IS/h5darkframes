@@ -1,5 +1,7 @@
+import typing
 import tempfile
 import time
+import numpy as np
 import h5darkframes as dark
 from collections import OrderedDict
 from pathlib import Path
@@ -34,6 +36,33 @@ def test_reach_control():
         end = time.time()
         assert camera.get_control("height") == 12
         assert end - start < 0.1
+
+
+def test_average_images():
+    class DummyTaker:
+        def __init__(self, shape: typing.Tuple[int, int], value: int):
+            self._value = value
+            self._shape = shape
+
+        def picture(self):
+            return np.zeros(self._shape, dtype=np.uint16) + self._value
+
+    max_value = (np.uint16() - 1).astype(np.uint16)
+    demi_value = (max_value / 2).astype(np.uint16)
+    values = (max_value, demi_value)
+
+    shape = (1000, 1000)
+
+    avg_over = 50
+
+    for value in values:
+
+        image_taker = DummyTaker(shape, value)
+        image = dark.create_library._take_and_average_images(image_taker, avg_over)
+
+        assert image.dtype == np.uint16
+        assert image.shape == shape
+        assert image[10, 10] == value
 
 
 def test_create_library():

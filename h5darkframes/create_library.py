@@ -5,7 +5,7 @@ import h5py
 import typing
 import numpy as np
 from numpy import typing as npt
-from .camera import Camera
+from .camera import Camera, ImageTaker
 from .control_range import ControlRange
 from .progress import Progress
 
@@ -43,6 +43,31 @@ def _get_group(
             else:
                 return None, False
     return group, created
+
+
+def _take_and_average_images(
+    camera: ImageTaker,
+    avg_over: int,
+    progress: typing.Optional[Progress] = None,
+    controls: typing.Optional[OrderedDict] = None,
+    estimated_duration: float = 0,
+) -> npt.ArrayLike:
+    images_sum: typing.Optional[npt.ArrayLike] = None
+    images_type = None
+    for _ in range(avg_over):
+        _logger.debug("taking picture")
+        original_image = camera.picture()
+        if images_type is None:
+            images_type = original_image.dtype  # type: ignore
+        image_ = original_image.astype(np.uint32)  # type: ignore
+        if images_sum is None:
+            images_sum = image_
+        else:
+            images_sum += image_
+        if progress is not None:
+            if controls is not None:
+                progress.picture_taken_feedback(controls, estimated_duration, 1)
+    return (images_sum / avg_over).astype(images_type)  # type: ignore
 
 
 def _add_to_hdf5(
@@ -95,13 +120,13 @@ def _add_to_hdf5(
         return
 
     # taking and averaging the pictures
-    images: typing.List[npt.ArrayLike] = []
-    for _ in range(avg_over):
-        _logger.debug("taking picture")
-        images.append(camera.picture())
-        if progress is not None:
-            progress.picture_taken_feedback(controls, estimated_duration, 1)
-    image = np.mean(images, axis=0)  # type: ignore
+    image = _take_and_average_images(
+        camera,
+        avg_over,
+        progress=progress,
+        controls=controls,
+        estimated_duration=estimated_duration,
+    )
 
     # adding the image to the hdf5 file
     report: str = ", ".join(
