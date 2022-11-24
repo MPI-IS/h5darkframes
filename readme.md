@@ -119,7 +119,7 @@ Call in a terminal:
 darkframes-zwoasi-library --name mylibraryname
 ```
 
-You may get stats regarding the library:
+You may get stats regarding the library (requires a file 'darkframes.hdf5' in the current directory):
 
 ```bash
 darkframes-info
