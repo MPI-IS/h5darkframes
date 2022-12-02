@@ -28,6 +28,7 @@ darkframes-zwoasi-config = 'h5darkframes.main:asi_zwo_darkframes_config'
 darkframes-zwoasi-library = 'h5darkframes.main:asi_zwo_darkframes_library'
 darkframes-info = 'h5darkframes.main:darkframes_info'
 darkframes-display = 'h5darkframes.main:darkframes_display'
+darkframes-fuse = 'h5darkframes.main:fuse'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
