@@ -1,7 +1,11 @@
 import typing
+import os
+import logging
 import argparse
+from pathlib import Path
 from .image_library import ImageLibrary
 from . import executables
+from .fuse_libraries import fuse_libraries
 
 
 def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
@@ -10,9 +14,6 @@ def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
         try:
             f()
         except Exception as e:
-            import traceback
-
-            print(traceback.format_exc())
             print(f"error ({e.__class__.__name__}):\n{e}\n")
             exit(1)
         print()
@@ -175,3 +176,46 @@ def darkframe_display():
     )
 
     image.display(label=params, resize=args.resize)
+
+
+@execute
+def fuse():
+
+    # the user must give a name to the library
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--name",
+        type=str,
+        required=True,
+        help="name of the resulting library",
+    )
+    args = parser.parse_args()
+
+    # we will attempt to fuse all
+    # "hdf5" files present in the current
+    # folder
+    root_dir = Path(os.getcwd())
+    files = root_dir.glob("*.hdf5")
+
+    # no hdf5 file, exiting
+    if not files:
+        raise FileNotFoundError(
+            "failed to find any *.hdf5 file in the " "current folder"
+        )
+
+    # the file into which all libraries will be fused
+    target_path = root_dir / "darkframes.hdf5(fused)"
+
+    # it already exists, exiting
+    if target_path.is_file():
+        raise ValueError(f"can not generate {target_path}: " "file already exists")
+
+    # logging, for user information
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(levelname)s] %(asctime)s | %(name)s |  %(message)s",
+        datefmt="%d-%b-%y %H:%M:%S",
+    )
+
+    # fusing
+    fuse_libraries(args.name, target_path, files)
