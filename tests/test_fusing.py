@@ -52,10 +52,10 @@ def test_fusing_libraries():
         # the params of the target library
         # is the list of the params of the libaries
         # that have been fused
-        params = target.params()
+        params = target.ranges()
 
-        assert lib1.params() in params
-        assert lib2.params() in params
+        assert lib1.ranges() in params
+        assert lib2.ranges() in params
 
         # reading all the configs
         lib1_configs = lib1.configs()

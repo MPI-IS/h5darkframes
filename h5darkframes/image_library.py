@@ -14,21 +14,21 @@ class ImageNotFoundError(Exception):
 
 class ImageStats:
     def __init__(self, image: npt.ArrayLike) -> None:
-        self.shape: typing.Tuple[int, ...] = image.shape
+        self.shape: typing.Tuple[int, ...] = image.shape  # type: ignore
         self.min = np.min(image)
         self.max = np.max(image)
-        self.avg = np.average(image)
-        self.std = np.std(image)
+        self.avg = np.average(image)  # type: ignore
+        self.std = np.std(image)  # type: ignore
 
-    def pretty(self)->typing.List[str]:
+    def pretty(self) -> typing.List[str]:
         return [
             str(self.shape),
             str(self.min),
             str(self.max),
-            str('%.2f'%self.avg),
-            str('%.2f'%self.std)
+            str("%.2f" % self.avg),
+            str("%.2f" % self.std),
         ]
-        
+
     def __str__(self):
         return str(
             f"shape: {self.shape} min: {self.min} max: {self.max} "
@@ -89,35 +89,36 @@ class ImageLibrary:
         self._hdf5_file = h5py.File(hdf5_path, "r")
         self._controls = eval(self._hdf5_file.attrs["controls"])
 
-    def configs(self) -> typing.List[typing.Dict[str, int]]:
+    def configs(self) -> typing.List[typing.OrderedDict[str, int]]:
         """
         Return the list of all configurations to which a corresponding
         image is stored in the library.
         """
 
-        def _add(controls, index, group, current, list_) -> None:
-            if index == len(controls):
-                list_.append(current)
+        def _append_configs(
+            controllables: typing.List[str],
+            h5: h5py.File,
+            index: int,
+            current: typing.OrderedDict[str, int],
+            c: typing.List[typing.OrderedDict[str, int]],
+        ):
+            if index >= len(controllables):
+                c.append(current)
                 return
-            for value in group.keys():
+            for key in sorted(h5.keys()):
                 current_ = copy.deepcopy(current)
-                current_[controls[index]] = int(value)
-                _add(controls, index + 1, group[value], current_, list_)
+                current_[controllables[index]] = int(key)
+                _append_configs(controllables, h5[key], index + 1, current_, c)
 
-        def _add_controls(controls):
-            index = 0
-            group = self._hdf5_file
-            _add(controls, index, group, {}, r)
+        controllables: typing.List[str] = self.controllables()
+        h5: h5py.File = self._hdf5_file
+        index: int = 0
+        current: typing.OrderedDict[str, int] = OrderedDict()
+        c: typing.List[typing.OrderedDict[str, int]] = []
 
-        r: typing.List[typing.Dict[str, int]] = []
-        if isinstance(self._controls, list):
-            for controls_ in self._controls:
-                controls = list(controls_.keys())
-                _add_controls(controls)
-        else:
-            controls = list(self._controls.keys())
-            _add_controls(controls)
-        return r
+        _append_configs(controllables, h5, index, current, c)
+
+        return c
 
     def nb_pics(self) -> int:
         """
@@ -139,12 +140,12 @@ class ImageLibrary:
         List of controllables that have been "ranged over"
         when creating the libaries
         """
-        params = self.params()
+        params = self.ranges()
         if isinstance(params, OrderedDict):
             return list(params.keys())
         return list(params[0].keys())
 
-    def params(
+    def ranges(
         self,
     ) -> typing.Union[
         typing.List[typing.OrderedDict[str, ControlRange]],

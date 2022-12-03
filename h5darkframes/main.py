@@ -1,5 +1,5 @@
 import typing
-import rich
+import cv2
 import os
 import logging
 import argparse
@@ -16,7 +16,6 @@ def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
             f()
         except Exception as e:
             import traceback
-
             print(traceback.format_exc())
             print(f"error ({e.__class__.__name__}):\n{e}\n")
             exit(1)
@@ -102,7 +101,7 @@ def _darkframes_info_pretty(library: ImageLibrary) -> None:
     from rich.table import Table
     from rich.console import Console
     from rich.progress import track
-    
+
     table = Table(title="configurations")
     for controllable in controllables:
         table.add_column(controllable)
@@ -131,7 +130,7 @@ def _darkframes_info_pretty(library: ImageLibrary) -> None:
     console = Console()
     console.print(table)
     print()
-    
+
 
 def _darkframes_info_fast(library: ImageLibrary, stats: bool) -> None:
 
@@ -169,7 +168,7 @@ def darkframes_info():
 
         # basic infos
         library_name = library.name()
-        control_ranges = library.params()
+        control_ranges = library.ranges()
         nb_pics = library.nb_pics()
         print(
             str(
@@ -191,11 +190,11 @@ def darkframes_info():
             _print_range(control_ranges)
 
         if not args.stats:
-            _darkframes_info_fast(library,args.stats)
+            _darkframes_info_fast(library, args.stats)
             return
 
         if not args.pretty:
-            _darkframes_info_fast(library,args.stats)
+            _darkframes_info_fast(library, args.stats)
         else:
             _darkframes_info_pretty(library)
 
@@ -204,14 +203,13 @@ def darkframes_info():
 def darkframe_display():
 
     path = executables.get_darkframes_path()
-
     library = ImageLibrary(path)
-    controls = list(library.params().keys())
-
+    controllables = library.controllables()
+    
     parser = argparse.ArgumentParser()
 
     # each control parameter has its own argument
-    for control in controls:
+    for control in controllables:
         parser.add_argument(
             f"--{control}", type=int, required=True, help="the value for the control"
         )
@@ -236,20 +234,29 @@ def darkframe_display():
 
     args = parser.parse_args()
 
-    control_values = {control: int(getattr(args, control)) for control in controls}
+    control_values = {control: int(getattr(args, control)) for control in controllables}
 
-    image, image_controls = library.get(control_values)
+    image, image_controls = library.get(control_values,nparray=True)
 
     if args.multiplier != 1.0:
-        image._data = image.get_data() * args.multiplier
+        image = image * args.multiplier
 
     params = ", ".join(
         [f"{control}: {value}" for control, value in image_controls.items()]
     )
 
-    image.display(label=params, resize=args.resize)
+    if args.multiplier!=1.0:
+        image = image*args.multiplier
+    
+    if args.resize!=1.0:
+        shape = tuple([int(s/args.resize+0.5) for s in image.shape])
+        image = cv2.resize(image,shape,interpolation=cv2.INTER_NEAREST)
+    
+    cv2.imshow(str(image_controls),image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-
+    
 @execute
 def fuse():
 

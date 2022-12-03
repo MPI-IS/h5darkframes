@@ -113,5 +113,5 @@ def fuse_libraries(
     params: typing.List[str] = libs[0].controllables()
     with h5py.File(target, "a") as h5target:
         _fuse_libraries(h5target, libraries, libs, params)
-        h5target.attrs["controls"] = repr([lib.params() for lib in libs])
+        h5target.attrs["controls"] = repr([lib.ranges() for lib in libs])
         h5target.attrs["name"] = name

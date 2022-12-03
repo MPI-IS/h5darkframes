@@ -89,7 +89,7 @@ def test_create_library():
 
             with dark.ImageLibrary(path) as il:
 
-                params = il.params()
+                params = il.ranges()
                 assert params["width"].min == 60
                 assert params["height"].max == 13
 
