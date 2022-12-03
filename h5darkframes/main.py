@@ -3,6 +3,7 @@ import cv2
 import os
 import logging
 import argparse
+import numpy as np
 from pathlib import Path
 from .image_library import ImageLibrary, ImageStats, ImageNotFoundError
 from . import executables
@@ -217,9 +218,9 @@ def darkframe_display():
     # to make the image more salient
     parser.add_argument(
         "--multiplier",
-        type=float,
+        type=int,
         required=False,
-        default=1.0,
+        default=1,
         help="pixels values will be multiplied by it",
     )
 
@@ -246,7 +247,10 @@ def darkframe_display():
     )
 
     if args.multiplier!=1.0:
-        image = image*args.multiplier
+        image64 = image.astype(np.uint64)
+        image64 = image64 * args.multiplier
+        image64 = np.clip(image64,0,np.iinfo(np.uint16).max)
+        image = image64.astype(np.uint16)
     
     if args.resize!=1.0:
         shape = tuple([int(s/args.resize+0.5) for s in image.shape])
