@@ -1,10 +1,39 @@
 import typing
 import h5py
 import copy
+import numpy as np
 from numpy import typing as npt
 from pathlib import Path
 from .control_range import ControlRange
 from collections import OrderedDict  # noqa: F401
+
+
+class ImageNotFoundError(Exception):
+    pass
+
+
+class ImageStats:
+    def __init__(self, image: npt.ArrayLike) -> None:
+        self.shape: typing.Tuple[int, ...] = image.shape
+        self.min = np.min(image)
+        self.max = np.max(image)
+        self.avg = np.average(image)
+        self.std = np.std(image)
+
+    def pretty(self)->typing.List[str]:
+        return [
+            str(self.shape),
+            str(self.min),
+            str(self.max),
+            str('%.2f'%self.avg),
+            str('%.2f'%self.std)
+        ]
+        
+    def __str__(self):
+        return str(
+            f"shape: {self.shape} min: {self.min} max: {self.max} "
+            f"average: {'%.2f' % self.avg} std: {'%.2f' % self.std}"
+        )
 
 
 def _get_closest(value: int, values: typing.List[int]) -> int:
@@ -18,7 +47,10 @@ def _get_closest(value: int, values: typing.List[int]) -> int:
 
 
 def _get_image(
-    values: typing.List[int], hdf5_file: h5py.File, index: int = 0
+    values: typing.List[int],
+    hdf5_file: h5py.File,
+    index: int = 0,
+    nparray: bool = False,
 ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
     """
     Returns the image in the library which has been taken with
@@ -28,12 +60,21 @@ def _get_image(
     if "image" in hdf5_file.keys():
         img = hdf5_file["image"]
         config = eval(hdf5_file.attrs["camera_config"])
-        return img, config
-
+        if not nparray:
+            return img, config
+        else:
+            # converting the h5py dataset to numpy array
+            array = np.zeros(img.shape, img.dtype)
+            img.read_direct(array)
+            return array, config
     else:
         keys = list([int(k) for k in hdf5_file.keys()])
+        if index >= len(values):
+            raise ImageNotFoundError()
         best_value = _get_closest(values[index], keys)
-        return _get_image(values, hdf5_file[str(best_value)], index + 1)
+        return _get_image(
+            values, hdf5_file[str(best_value)], index + 1, nparray=nparray
+        )
 
 
 class ImageLibrary:
@@ -78,6 +119,21 @@ class ImageLibrary:
             _add_controls(controls)
         return r
 
+    def nb_pics(self) -> int:
+        """
+        Returns the number of darkframes
+        contained by the library.
+        """
+        configs = self.configs()
+        found = 0
+        for config in configs:
+            try:
+                self.get(config)
+                found += 1
+            except ImageNotFoundError:
+                pass
+        return found
+
     def controllables(self) -> typing.List[str]:
         """
         List of controllables that have been "ranged over"
@@ -112,11 +168,14 @@ class ImageLibrary:
             return "(not named)"
 
     def get(
-        self, controls: typing.Dict[str, int]
+        self, controls: typing.Dict[str, int], nparray: bool = False
     ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
         """
         Returns the image in the library that was taken using
         the configuration the closest to the passed controls.
+
+        If not nparray, the image will be a h5py data instance (can not be accessed once the file is closed). Otherwise
+        the image will be a numpy array (hard copy of the h5py dataset)
 
         Arguments
         ---------
@@ -148,7 +207,7 @@ class ImageLibrary:
         values = list(controls.values())
         image: npt.ArrayLike
         config: typing.Dict
-        image, config = _get_image(values, self._hdf5_file, index=0)
+        image, config = _get_image(values, self._hdf5_file, index=0, nparray=nparray)
         return image, config
 
     def close(self) -> None:

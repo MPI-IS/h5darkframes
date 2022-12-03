@@ -1,9 +1,10 @@
 import typing
+import rich
 import os
 import logging
 import argparse
 from pathlib import Path
-from .image_library import ImageLibrary
+from .image_library import ImageLibrary, ImageStats, ImageNotFoundError
 from . import executables
 from .fuse_libraries import fuse_libraries
 
@@ -14,6 +15,9 @@ def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
         try:
             f()
         except Exception as e:
+            import traceback
+
+            print(traceback.format_exc())
             print(f"error ({e.__class__.__name__}):\n{e}\n")
             exit(1)
         print()
@@ -91,41 +95,109 @@ def asi_zwo_darkframes_library():
     print(f"\ncreated the file {path}\n")
 
 
+def _darkframes_info_pretty(library: ImageLibrary) -> None:
+
+    controllables: typing.List[str] = library.controllables()
+
+    from rich.table import Table
+    from rich.console import Console
+    from rich.progress import track
+    
+    table = Table(title="configurations")
+    for controllable in controllables:
+        table.add_column(controllable)
+
+    stat_keys = ("shape", "min", "max", "avg", "std")
+    for key in stat_keys:
+        table.add_column(key)
+
+    print()
+    configs = library.configs()
+    for config in track(configs, description="reading images..."):
+        row: typing.List[str] = []
+        for controllable in controllables:
+            row.append(str(config[controllable]))
+        try:
+            image, _ = library.get(config)
+        except ImageNotFoundError:
+            for key in stat_keys:
+                row.append("-")
+        else:
+            image_stats = ImageStats(image)
+            row.extend(image_stats.pretty())
+        table.add_row(*row)
+
+    print()
+    console = Console()
+    console.print(table)
+    print()
+    
+
+def _darkframes_info_fast(library: ImageLibrary, stats: bool) -> None:
+
+    configs = library.configs()
+    print(f"\nconfigurations\n{'-'*14}")
+    image_stats = ""
+    for config in configs:
+        if stats:
+            try:
+                image, _ = library.get(config)
+            except ImageNotFoundError:
+                image_stats = "image not found"
+            else:
+                image_stats = str(ImageStats(image))
+        print(
+            "\t".join([f"{key}: {value}" for key, value in config.items()])
+            + f"\t\t{image_stats}"
+        )
+    print()
+
+
 @execute
 def darkframes_info():
+
+    # if user passes the --stats flag, stats of pictures will be displayed
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--stats", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--pretty", action=argparse.BooleanOptionalAction)
+    args = parser.parse_args()
 
     # path to configuration file
     path = executables.get_darkframes_path()
 
     with ImageLibrary(path) as library:
 
+        # basic infos
         library_name = library.name()
-
         control_ranges = library.params()
-
-        nb_pics = 1
-        for cr in control_ranges.values():
-            nb_pics = nb_pics * len(cr.get_values())
-
-        r = [
+        nb_pics = library.nb_pics()
+        print(
             str(
-                f"Library: {library_name}\n"
+                f"\nLibrary: {library_name}\n"
                 f"Image Library of {nb_pics} pictures.\n\n"
                 f"parameters\n{'-'*10}"
             )
-        ]
+        )
 
-        for name, cr in control_ranges.items():
-            r.append(f"{name}: {cr}")
+        # control ranges used to create the file
+        def _print_range(control_ranges_):
+            for name, cr in control_ranges_.items():
+                print(f"{name}:\t{cr}")
 
-        configs = library.configs()
-        r.append(f"\nconfigurations\n{'-'*14}")
-        for config in configs:
-            r.append("\t".join([f"{key}: {value}" for key, value in config.items()]))
+        if isinstance(control_ranges, list):
+            for control_ranges_ in control_ranges:
+                _print_range(control_ranges_)
+        else:
+            _print_range(control_ranges)
 
-        print()
-        print("\n".join(r))
-        print()
+        if not args.stats:
+            _darkframes_info_fast(library,args.stats)
+            return
+
+        if not args.pretty:
+            _darkframes_info_fast(library,args.stats)
+        else:
+            _darkframes_info_pretty(library)
 
 
 @execute
@@ -195,7 +267,7 @@ def fuse():
     # "hdf5" files present in the current
     # folder
     root_dir = Path(os.getcwd())
-    files = root_dir.glob("*.hdf5")
+    files = list(root_dir.glob("*.hdf5"))
 
     # no hdf5 file, exiting
     if not files:

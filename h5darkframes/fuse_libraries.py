@@ -10,7 +10,7 @@ from pathlib import Path
 from .control_range import ControlRange  # noqa: F401
 from collections import OrderedDict  # noqa: F401
 from . import create_library
-from .image_library import ImageLibrary
+from .image_library import ImageLibrary, ImageNotFoundError
 
 _logger = logging.getLogger("fusion")
 
@@ -56,13 +56,19 @@ def _fuse_libraries(
             control_ = OrderedDict()
             for param in params:
                 control_[param] = control[param]
-            _logger.debug("adding {control} from {path}")
-            image, config = lib.get(control_)
-            added = _add(target, control_, image, config)
-            if not added:
-                _logger.debug("controls already added, skipping")
+            _logger.info("adding {control} from {path}")
+            try:
+                image, config = lib.get(control_)
+            except ImageNotFoundError:
+                _logger.error(
+                    f"failed to find the image corresponding to {control} in {path}, skipping"
+                )
             else:
-                nb_added += 1
+                added = _add(target, control_, image, config)
+                if not added:
+                    _logger.debug("controls already added, skipping")
+                else:
+                    nb_added += 1
         _logger.info(f"added {nb_added} image(s) from {path}")
 
 
