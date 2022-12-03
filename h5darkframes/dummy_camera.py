@@ -69,7 +69,6 @@ class DummyCamera(Camera):
         super().__init__(control_ranges)
         self.width = 0
         self._height = _Height(0, dynamic)
-
         self._value = value
 
     def stop(self):

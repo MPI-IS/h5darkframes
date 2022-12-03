@@ -83,3 +83,7 @@ class ControlRange:
                 d[control] = value
             yield (d)
         return None
+
+    def __eq__(self, other) -> bool:
+        attrs = ("min", "max", "threshold", "step")
+        return all([getattr(self, attr) == getattr(other, attr) for attr in attrs])

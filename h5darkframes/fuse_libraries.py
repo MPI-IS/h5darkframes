@@ -71,6 +71,7 @@ def fuse_libraries(
     target: Path,
     libraries: typing.Sequence[Path],
 ) -> None:
+
     # basic checks
     if not target.parents[0].is_dir():
         raise FileNotFoundError(
@@ -86,20 +87,25 @@ def fuse_libraries(
             raise FileNotFoundError(
                 f"fail to find the h5darkframes library file {path}"
             )
+
     # opening the libraries to fuse
     libs = [ImageLibrary(l_) for l_ in libraries]
+
     # checking all libraries are based on the same
     # controllables
     controllables: typing.List[typing.Set[str]]
-    controllables = [set(lib.params().keys()) for lib in libs]
+    controllables = [set(lib.controllables()) for lib in libs]
     for index, (c1, c2) in enumerate(zip(controllables, controllables[1:])):
         if not c1 == c2:
             raise ValueError(
                 f"can not fuse libraries {libraries[index]} and {libraries[index+1]}: "
                 f"not based on the same controllables ({c1} and {c2})"
             )
+
     # params is the list of controls used, in order (it matters)
     # (ImageLibrary.params returns an OrderedDict)
-    params: typing.List[str] = list(libs[0].params().keys())
-    with h5py.File(target, "a") as target:
-        _fuse_libraries(target, libraries, libs, params)
+    params: typing.List[str] = libs[0].controllables()
+    with h5py.File(target, "a") as h5target:
+        _fuse_libraries(h5target, libraries, libs, params)
+        h5target.attrs["controls"] = repr([lib.params() for lib in libs])
+        h5target.attrs["name"] = name

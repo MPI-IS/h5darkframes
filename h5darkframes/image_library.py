@@ -63,14 +63,37 @@ class ImageLibrary:
                 current_[controls[index]] = int(value)
                 _add(controls, index + 1, group[value], current_, list_)
 
-        controls = list(self._controls.keys())
-        index = 0
-        group = self._hdf5_file
+        def _add_controls(controls):
+            index = 0
+            group = self._hdf5_file
+            _add(controls, index, group, {}, r)
+
         r: typing.List[typing.Dict[str, int]] = []
-        _add(controls, index, group, {}, r)
+        if isinstance(self._controls, list):
+            for controls_ in self._controls:
+                controls = list(controls_.keys())
+                _add_controls(controls)
+        else:
+            controls = list(self._controls.keys())
+            _add_controls(controls)
         return r
 
-    def params(self) -> typing.OrderedDict[str, ControlRange]:
+    def controllables(self) -> typing.List[str]:
+        """
+        List of controllables that have been "ranged over"
+        when creating the libaries
+        """
+        params = self.params()
+        if isinstance(params, OrderedDict):
+            return list(params.keys())
+        return list(params[0].keys())
+
+    def params(
+        self,
+    ) -> typing.Union[
+        typing.List[typing.OrderedDict[str, ControlRange]],
+        typing.OrderedDict[str, ControlRange],
+    ]:
         """
         Returns the range of values that have been used to generate
         this file.
@@ -108,14 +131,14 @@ class ImageLibrary:
         """
 
         for control in controls:
-            if control not in self._controls:
+            if control not in self.controllables():
                 slist = ", ".join(self._controls)
                 raise ValueError(
                     f"Failed to get an image from the image library {self._path}: "
                     f"the control {control} is not supported (supported: {slist})"
                 )
 
-        for control in self._controls:
+        for control in self.controllables():
             if control not in controls:
                 raise ValueError(
                     f"Failed to get an image from the image library {self._path}: "
