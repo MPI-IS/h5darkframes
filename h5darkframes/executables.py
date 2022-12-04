@@ -83,7 +83,12 @@ def _append_user_feedback(path: Path) -> bool:
 
 
 def darkframes_library(
-    camera_class: typing.Type[Camera], libname: str, progress_bar: bool, **camera_kwargs
+    camera_class: typing.Type[Camera],
+    libname: str,
+    progress_bar: bool,
+    dump: typing.Optional[Path],
+    dump_format: typing.Optional[str],
+    **camera_kwargs,
 ) -> Path:
 
     # path to configuration file
@@ -131,7 +136,14 @@ def darkframes_library(
         else:
             progress_bar_ = None
         library(
-            libname, camera, control_ranges, average_over, path, progress=progress_bar_
+            libname,
+            camera,
+            control_ranges,
+            average_over,
+            path,
+            progress=progress_bar_,
+            dump=dump,
+            dump_format=dump_format,
         )
 
     # stopping camera

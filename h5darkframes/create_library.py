@@ -3,6 +3,7 @@ from pathlib import Path
 import logging
 import h5py
 import typing
+import cv2
 import numpy as np
 from numpy import typing as npt
 from .camera import Camera, ImageTaker
@@ -13,7 +14,9 @@ _logger = logging.getLogger("h5darkframes")
 
 
 def _get_group(
-    hdf5_file: h5py.File, controls: typing.OrderedDict[str, int], create: bool
+    hdf5_file: h5py.File,
+    controls: typing.OrderedDict[str, int],
+    create: bool,
 ) -> typing.Tuple[typing.Optional[h5py.File], bool]:
     """
     Returns the group in the hdf5 file corresponding
@@ -45,21 +48,46 @@ def _get_group(
     return group, created
 
 
+def _dump_picture(
+    image: npt.ArrayLike,
+    directory: Path,
+    index: int,
+    controls: typing.OrderedDict,
+    file_format: str,
+) -> None:
+
+    filename = "_".join([f"{key}_{value}" for key, value in controls.items()])
+    filename += f"_{index}.{file_format}"
+
+    path = directory / filename
+
+    _logger.debug(f"writing file {path}")
+
+    if file_format == "npy":
+        np.save(path, image)
+    else:
+        cv2.imwrite(path, image)
+
+
 def _take_and_average_images(
     camera: ImageTaker,
     avg_over: int,
     progress: typing.Optional[Progress] = None,
     controls: typing.Optional[OrderedDict] = None,
     estimated_duration: float = 0,
+    dump: typing.Optional[Path] = None,
+    dump_format: typing.Optional[str] = None,
 ) -> npt.ArrayLike:
     images_sum: typing.Optional[npt.ArrayLike] = None
     images_type = None
-    for _ in range(avg_over):
+    for index in range(avg_over):
         _logger.debug("taking picture")
         original_image = camera.picture()
+        if dump and dump_format and controls:
+            _dump_picture(original_image, dump, index, controls, dump_format)
         if images_type is None:
             images_type = original_image.dtype  # type: ignore
-        image_ = original_image.astype(np.uint32)  # type: ignore
+        image_ = original_image.astype(np.uint64)  # type: ignore
         if images_sum is None:
             images_sum = image_
         else:
@@ -76,6 +104,8 @@ def _add_to_hdf5(
     avg_over: int,
     hdf5_file: h5py.File,
     progress: typing.Optional[Progress] = None,
+    dump: typing.Optional[Path] = None,
+    dump_format: typing.Optional[str] = None,
 ) -> None:
     """
     Has the camera take images, average them and adds this averaged image
@@ -126,6 +156,8 @@ def _add_to_hdf5(
         progress=progress,
         controls=controls,
         estimated_duration=estimated_duration,
+        dump=dump,
+        dump_format=dump_format,
     )
 
     # adding the image to the hdf5 file
@@ -150,6 +182,8 @@ def library(
     avg_over: int,
     hdf5_path: Path,
     progress: typing.Optional[Progress] = None,
+    dump: typing.Optional[Path] = None,
+    dump_format: typing.Optional[str] = "npy",
 ) -> None:
     """Create an hdf5 image library file
 
@@ -160,8 +194,13 @@ def library(
     'name' is a (possibly chosen unique) arbitrary string,
     used for identification of the file (can be, for example,
     the serial number of the camera used to take the frames).
-    For each set of picture taken, the callback is called, passing
-    as argument the duration taken to take the pictures.
+
+    'dump' is an optional path to an existing folder into
+    which all picture taken will be written into a file of format
+    'dump_format' (which default value is npy, i.e. numpy array).
+    Note that 'all' really means all, i.e. before averaging
+    (if 'avg_over' is 10, 10 pictures will be dumped per control
+    range).
     """
 
     # opening the hdf5 file in write mode
@@ -176,4 +215,12 @@ def library(
         # iterating over all the controls and adding
         # the images to the hdf5 file
         for controls in ControlRange.iterate_controls(control_ranges):
-            _add_to_hdf5(camera, controls, avg_over, hdf5_file, progress=progress)
+            _add_to_hdf5(
+                camera,
+                controls,
+                avg_over,
+                hdf5_file,
+                progress=progress,
+                dump=dump,
+                dump_format=dump_format,
+            )

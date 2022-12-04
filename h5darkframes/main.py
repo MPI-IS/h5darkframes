@@ -17,6 +17,7 @@ def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
             f()
         except Exception as e:
             import traceback
+
             print(traceback.format_exc())
             print(f"error ({e.__class__.__name__}):\n{e}\n")
             exit(1)
@@ -77,7 +78,28 @@ def asi_zwo_darkframes_library():
         required=True,
         help="name of the library",
     )
+
+    # the user may require images to be saved
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--fileformat",
+        type=str,
+        required=False,
+        help=str(
+            "if specified, all image taken will also be dumped "
+            "in the current directory in files of the specified "
+            "format (*.npy is numpy). Meant for debug."
+        ),
+    )
+
     args = parser.parse_args()
+
+    if args.fileformat:
+        directory = Path(os.getcwd())
+        fileformat = args.fileformat
+    else:
+        directory = None
+        fileformat = None
 
     # using the first camera
     camera_kwargs = {"index": 0}
@@ -88,7 +110,7 @@ def asi_zwo_darkframes_library():
     # creating the library
     progress_bar = True
     path = executables.darkframes_library(
-        camera_class, args.name, progress_bar, **camera_kwargs
+        camera_class, args.name, progress_bar, directory, fileformat, **camera_kwargs
     )
 
     # informing user
@@ -206,7 +228,7 @@ def darkframe_display():
     path = executables.get_darkframes_path()
     library = ImageLibrary(path)
     controllables = library.controllables()
-    
+
     parser = argparse.ArgumentParser()
 
     # each control parameter has its own argument
@@ -237,30 +259,26 @@ def darkframe_display():
 
     control_values = {control: int(getattr(args, control)) for control in controllables}
 
-    image, image_controls = library.get(control_values,nparray=True)
+    image, image_controls = library.get(control_values, nparray=True)
 
     if args.multiplier != 1.0:
         image = image * args.multiplier
 
-    params = ", ".join(
-        [f"{control}: {value}" for control, value in image_controls.items()]
-    )
-
-    if args.multiplier!=1.0:
+    if args.multiplier != 1.0:
         image64 = image.astype(np.uint64)
         image64 = image64 * args.multiplier
-        image64 = np.clip(image64,0,np.iinfo(np.uint16).max)
+        image64 = np.clip(image64, 0, np.iinfo(np.uint16).max)
         image = image64.astype(np.uint16)
-    
-    if args.resize!=1.0:
-        shape = tuple([int(s/args.resize+0.5) for s in image.shape])
-        image = cv2.resize(image,shape,interpolation=cv2.INTER_NEAREST)
-    
-    cv2.imshow(str(image_controls),image)
+
+    if args.resize != 1.0:
+        shape = tuple([int(s / args.resize + 0.5) for s in image.shape])
+        image = cv2.resize(image, shape, interpolation=cv2.INTER_NEAREST)
+
+    cv2.imshow(str(image_controls), image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    
+
 @execute
 def fuse():
 
