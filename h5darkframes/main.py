@@ -80,7 +80,6 @@ def asi_zwo_darkframes_library():
     )
 
     # the user may require images to be saved
-    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--fileformat",
         type=str,
