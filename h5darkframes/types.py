@@ -1,4 +1,5 @@
 import typing
+from numpy import typing as npt
 from .control_range import ControlRange
 
 Controllables = typing.Tuple[str, ...]
@@ -29,4 +30,12 @@ length than Contrallables, and in the same order, e.g.
 if an instance of Controllables is ["c1","c2"] 
 and an instance of Params is [1,2], this means the library contains a darkframe for 
 the configuration {"c1":1, "c2":2}.
+"""
+
+ParamImages = typing.Dict[
+    typing.Tuple[int,...],
+    npt.ArrayLike
+]
+"""
+The parameters associated with the corresponding image.
 """

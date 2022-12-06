@@ -19,18 +19,15 @@ class GetType(Enum):
 
 
 def _get_controllables(
-    ranges: typing.Union[
-        typing.List[typing.OrderedDict[str, ControlRange]],
-        typing.OrderedDict[str, ControlRange],
-    ]
-) -> typing.List[str]:
+    ranges: Ranges
+) -> typing.Tuple[str,...]:
     """
     List of controllables that have been "ranged over"
     when creating the libaries
     """
     if isinstance(ranges, OrderedDict):
-        return list(ranges.keys())
-    return list(ranges[0].keys())
+        return tuple(ranges.keys())
+    return tuple(ranges[0].keys())
 
 
 def _get_params(
