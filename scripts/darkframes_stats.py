@@ -49,12 +49,12 @@ def select_pixels(darkfiles: Darkfiles) -> typing.Tuple[Pixel, Pixel, Pixel]:
     pixel_values: typing.Dict[Pixel, float] = {}
     sum_images = np.zeros(_shape)
 
-    for image_list in track(list(darkfiles.values()),"reading pixels"):
+    for image_list in track(list(darkfiles.values()), "reading pixels"):
         for image in image_list:
             sum_images += image.astype(sum_images.dtype)
 
     pixel_values = {
-        (row,coln): sum_images[row][coln]
+        (row, coln): sum_images[row][coln]
         for row in range(_shape[0])
         for coln in range(_shape[1])
     }
@@ -73,15 +73,10 @@ def select_pixels(darkfiles: Darkfiles) -> typing.Tuple[Pixel, Pixel, Pixel]:
 def run():
 
     darkfiles: Darkfiles = read_files(Path(os.getcwd()))
-    configs = list(
-        sorted(
-            darkfiles.keys(),
-            key= lambda t: (int(t[0]),int(t[1]))
-        )
-    )
+    configs = list(sorted(darkfiles.keys(), key=lambda t: (int(t[0]), int(t[1]))))
 
     pixels: typing.Tuple[Pixel, ...] = select_pixels(darkfiles)
-    
+
     nb_rows = len(pixels)
     nb_colns = len(configs)
 
@@ -97,15 +92,17 @@ def run():
 
     with Progress() as progress:
 
-        task = progress.add_task("generating plots", total=len(pixels)*len(configs))
+        task = progress.add_task("generating plots", total=len(pixels) * len(configs))
 
-        for pixel_index,pixel in enumerate(pixels):
+        for pixel_index, pixel in enumerate(pixels):
             for config in configs:
-                p = axs[pixel_row[pixel],config_coln[config]]
+                p = axs[pixel_row[pixel], config_coln[config]]
                 images = darkfiles[config]
                 values = [image[pixel[0], pixel[1]] for image in images]
                 p.hist(values, 10)
-                p.set_title(f"pixel {pixel_index}, temp: {config[0]}, exposure: {config[1]}")
+                p.set_title(
+                    f"pixel {pixel_index}, temp: {config[0]}, exposure: {config[1]}"
+                )
                 progress.update(task, advance=1)
 
     plt.show()

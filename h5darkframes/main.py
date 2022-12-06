@@ -5,7 +5,9 @@ import logging
 import argparse
 import numpy as np
 from pathlib import Path
-from .image_library import ImageLibrary, ImageStats, ImageNotFoundError
+from .get_image import ImageNotFoundError
+from .image_library import ImageLibrary
+from .image_stats import ImageStats
 from . import executables
 from .fuse_libraries import fuse_libraries
 

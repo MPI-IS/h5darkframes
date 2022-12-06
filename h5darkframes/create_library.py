@@ -165,10 +165,6 @@ def _add_to_hdf5(
         [f"{control}: {value}" for control, value in applied_controls.items()]
     )
     _logger.info(f"creating dataset for {report}")
-    group = hdf5_file
-    for control in controls.keys():
-        value = camera.get_control(control)
-        group = group.require_group(str(value))
     group.create_dataset("image", data=image)
 
     # add the camera current configuration to the group
