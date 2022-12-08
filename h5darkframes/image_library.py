@@ -127,11 +127,17 @@ class ImageLibrary:
             return "(not named)"
 
     def get(
-        self, controls: typing.Dict[str, int], get_type: GetType, nparray: bool = False
+        self,
+        controls: typing.Union[ typing.Tuple[int,...] , typing.Dict[str, int] ],
+        get_type: GetType,
+        nparray: bool = False
     ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
 
-        values = tuple([controls[controllable] for controllable in self._controllables])
-
+        if isinstance(controls,dict):
+            values = tuple([controls[controllable] for controllable in self._controllables])
+        else:
+            values = controls
+            
         if get_type == GetType.exact:
             closest = False
             return get_image(values, self._h5, nparray, closest)

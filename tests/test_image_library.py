@@ -85,12 +85,12 @@ def test_create_library():
                 params = il.params()
                 for width in (60, 80, 100):
                     for height in (10, 11, 12, 13):
-                        assert (width,height) in params
+                        assert (width, height) in params
 
             with dark.ImageLibrary(path) as il:
 
                 closest = dark.GetType.closest
-                
+
                 params = il.ranges()
                 assert params["width"].min == 60
                 assert params["height"].max == 13
@@ -137,11 +137,11 @@ def test_update_library():
             path = Path(tmp) / "test.hdf5"
             dark.library("testlib", camera, controls, avg_over, path, progress=None)
             with dark.ImageLibrary(path) as il:
-                configs = il.configs()
+                params = il.params()
                 assert il.name() == "testlib"
             for width in (60, 80, 100):
                 for height in (10, 11, 12, 13):
-                    assert {"width": width, "height": height} in configs
+                    (width,height) in params
 
             # updating the library: the control ranges are wider
             controls = OrderedDict()
@@ -149,8 +149,8 @@ def test_update_library():
             controls["height"] = dark.ControlRange(8, 13, 1, timeout=2.0)
             dark.library("testlib2", camera, controls, avg_over, path, progress=None)
             with dark.ImageLibrary(path) as il:
-                configs = il.configs()
+                params = il.params()
                 assert il.name() == "testlib2"
             for width in (60, 80, 100, 120, 140):
                 for height in (8, 9, 10, 11, 12, 13):
-                    assert {"width": width, "height": height} in configs
+                    (width,height) in params

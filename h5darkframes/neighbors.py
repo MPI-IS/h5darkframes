@@ -7,10 +7,16 @@ from .types import ParamImages
 
 
 def _neighbor_indexes(
-    distances: typing.List[int], values: typing.List[int], target: int
+    values: typing.List[int], target: int
 ) -> typing.Tuple[typing.Optional[int], typing.Optional[int]]:
 
+    distances = [abs(target - v) for v in values]
+    
     index_min = min(range(len(distances)), key=distances.__getitem__)
+
+    if values[index_min]==target:
+        return index_min,None
+
     if index_min == 0:
         lower, higher = (None, None) if target < values[index_min] else (0, 1)
     elif index_min == len(distances) - 1:
@@ -43,20 +49,17 @@ def _neighbors(
 
     keys = sorted(list([int(k) for k in h5.keys()]))
     target: int = target_values[index]
-    d = [abs(target - k) for k in keys]
-    lower, higher = _neighbor_indexes(d, keys, target)
-
-    if lower is None or higher is None:
-        return False
+    lower, higher = _neighbor_indexes(keys, target)
 
     for item in (lower, higher):
-        current_ = copy.deepcopy(current)
-        current_.append(item)
-        inside = _neighbors(
-            h5[str(keys[item])], target_values, neighbors, current_, index + 1
-        )
-        if not inside:
-            return False
+        if item is not None:
+            current_ = copy.deepcopy(current)
+            current_.append(keys[item])
+            inside = _neighbors(
+                h5[str(keys[item])], target_values, neighbors, current_, index + 1
+            )
+            if not inside:
+                return False
 
     return True
 
@@ -82,10 +85,10 @@ def average_neighbors(
         values: typing.Tuple[int, ...],
         min_values: typing.Tuple[int, ...],
         max_values: typing.Tuple[int, ...],
-    ) -> typing.Tuple[int, ...]:
+    ) -> typing.Tuple[float, ...]:
         return tuple(
             [
-                int(((v - min_) / (max_ - min_)) + 0.5)
+                ((v - min_) / (max_ - min_))
                 for v, min_, max_ in zip(values, min_values, max_values)
             ]
         )
@@ -97,8 +100,10 @@ def average_neighbors(
         values: _normalize(values, min_values, max_values) for values in images.keys()
     }
 
+    normalized_target = _normalize(target_values,min_values, max_values)
+    
     distances = {
-        values: _distance(target_values, normalized[values]) for values in images.keys()
+        values: _distance(normalized_target, normalized[values]) for values in images.keys()
     }
 
     sum_distances = sum(distances.values())
@@ -110,8 +115,7 @@ def average_neighbors(
     for values, image in images.items():
         d = distances[values]
         try:
-            r += (d * image).astype(image.dtype)  # type: ignore
+            r += d * image  # type: ignore
         except NameError:
-            r = (d * image).astype(image.dtype)  # type: ignore
-
-    return r
+            r = d * image  # type: ignore
+    return r.astype(image.dtype)
