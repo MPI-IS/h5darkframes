@@ -25,9 +25,9 @@ def read_files(directory: Path) -> Darkfiles:
     for f in track(files, description="reading images"):
 
         filename = f.stem
-        fields = filename.split("_")
-        temperature = Temperature(fields[1])
-        exposure = Exposure(fields[3])
+        fields: typing.Sequence[str] = filename.split("_")
+        temperature = Temperature(int(fields[1]))
+        exposure = Exposure(int(fields[3]))
 
         key = (temperature, exposure)
         image = np.load(f)
@@ -51,7 +51,7 @@ def select_pixels(darkfiles: Darkfiles) -> typing.Tuple[Pixel, Pixel, Pixel]:
 
     for image_list in track(list(darkfiles.values()), "reading pixels"):
         for image in image_list:
-            sum_images += image.astype(sum_images.dtype)
+            sum_images += image.astype(sum_images.dtype)  # type: ignore
 
     pixel_values = {
         (row, coln): sum_images[row][coln]
