@@ -1,9 +1,14 @@
 import typing
+import cv2
 import os
 import logging
 import argparse
+import numpy as np
 from pathlib import Path
-from .image_library import ImageLibrary
+from .get_image import ImageNotFoundError
+from .types import Params, Controllables
+from .image_library import ImageLibrary, GetType
+from .image_stats import ImageStats
 from . import executables
 from .fuse_libraries import fuse_libraries
 
@@ -14,6 +19,9 @@ def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
         try:
             f()
         except Exception as e:
+            import traceback
+
+            print(traceback.format_exc())
             print(f"error ({e.__class__.__name__}):\n{e}\n")
             exit(1)
         print()
@@ -73,7 +81,27 @@ def asi_zwo_darkframes_library():
         required=True,
         help="name of the library",
     )
+
+    # the user may require images to be saved
+    parser.add_argument(
+        "--fileformat",
+        type=str,
+        required=False,
+        help=str(
+            "if specified, all image taken will also be dumped "
+            "in the current directory in files of the specified "
+            "format (*.npy is numpy). Meant for debug."
+        ),
+    )
+
     args = parser.parse_args()
+
+    if args.fileformat:
+        directory = Path(os.getcwd())
+        fileformat = args.fileformat
+    else:
+        directory = None
+        fileformat = None
 
     # using the first camera
     camera_kwargs = {"index": 0}
@@ -84,62 +112,137 @@ def asi_zwo_darkframes_library():
     # creating the library
     progress_bar = True
     path = executables.darkframes_library(
-        camera_class, args.name, progress_bar, **camera_kwargs
+        camera_class, args.name, progress_bar, directory, fileformat, **camera_kwargs
     )
 
     # informing user
     print(f"\ncreated the file {path}\n")
 
 
+def _darkframes_info_pretty(library: ImageLibrary) -> None:
+
+    controllables: Controllables = library.controllables()
+
+    from rich.table import Table
+    from rich.console import Console
+    from rich.progress import track
+
+    table = Table(title="configurations")
+    for controllable in controllables:
+        table.add_column(controllable)
+
+    stat_keys = ("shape", "min", "max", "avg", "std")
+    for key in stat_keys:
+        table.add_column(key)
+
+    print()
+    params: Params = sorted(library.params())
+    for param in track(params, description="reading images..."):
+        row: typing.List[str] = []
+        for p in param:
+            row.append(str(p))
+        try:
+            c = {controllable: p for controllable, p in zip(controllables, param)}
+            image, _ = library.get(c, GetType.exact)
+        except ImageNotFoundError:
+            for key in stat_keys:
+                row.append("-")
+        else:
+            image_stats = ImageStats(image)
+            row.extend(image_stats.pretty())
+        table.add_row(*row)
+
+    print()
+    console = Console()
+    console.print(table)
+    print()
+
+
+def _darkframes_info_fast(library: ImageLibrary, stats: bool) -> None:
+
+    params: Params = library.params()
+    controllables: Controllables = library.controllables()
+    print(f"\nconfigurations\n{'-'*14}")
+    image_stats = ""
+    for param in params:
+        if stats:
+            try:
+                c = {controllable: p for p, controllable in zip(param, controllables)}
+                image, _ = library.get(c, GetType.exact)
+            except ImageNotFoundError:
+                image_stats = "image not found"
+            else:
+                image_stats = str(ImageStats(image))
+        print(
+            "\t".join(
+                [
+                    f"{controllable}: {p}"
+                    for p, controllable in zip(param, controllables)
+                ]
+            )
+            + f"\t\t{image_stats}"
+        )
+    print()
+
+
 @execute
 def darkframes_info():
+
+    # if user passes the --stats flag, stats of pictures will be displayed
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--stats", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--pretty", action=argparse.BooleanOptionalAction)
+    args = parser.parse_args()
 
     # path to configuration file
     path = executables.get_darkframes_path()
 
     with ImageLibrary(path) as library:
 
+        # basic infos
         library_name = library.name()
-
-        control_ranges = library.params()
-
-        nb_pics = 1
-        for cr in control_ranges.values():
-            nb_pics = nb_pics * len(cr.get_values())
-
-        r = [
+        control_ranges = library.ranges()
+        nb_pics = library.nb_pics()
+        print(
             str(
-                f"Library: {library_name}\n"
+                f"\nLibrary: {library_name}\n"
                 f"Image Library of {nb_pics} pictures.\n\n"
                 f"parameters\n{'-'*10}"
             )
-        ]
+        )
 
-        for name, cr in control_ranges.items():
-            r.append(f"{name}: {cr}")
+        # control ranges used to create the file
+        def _print_range(control_ranges_):
+            for name, cr in control_ranges_.items():
+                print(f"{name}:\t{cr}")
 
-        configs = library.configs()
-        r.append(f"\nconfigurations\n{'-'*14}")
-        for config in configs:
-            r.append("\t".join([f"{key}: {value}" for key, value in config.items()]))
+        if isinstance(control_ranges, list):
+            for control_ranges_ in control_ranges:
+                _print_range(control_ranges_)
+        else:
+            _print_range(control_ranges)
 
-        print()
-        print("\n".join(r))
-        print()
+        if not args.stats:
+            _darkframes_info_fast(library, args.stats)
+            return
+
+        if not args.pretty:
+            _darkframes_info_fast(library, args.stats)
+        else:
+            _darkframes_info_pretty(library)
 
 
 @execute
 def darkframe_display():
 
     path = executables.get_darkframes_path()
-
     library = ImageLibrary(path)
-    controls = list(library.params().keys())
+    controllables = library.controllables()
 
     parser = argparse.ArgumentParser()
 
     # each control parameter has its own argument
-    for control in controls:
+    for control in controllables:
         parser.add_argument(
             f"--{control}", type=int, required=True, help="the value for the control"
         )
@@ -147,9 +250,9 @@ def darkframe_display():
     # to make the image more salient
     parser.add_argument(
         "--multiplier",
-        type=float,
+        type=int,
         required=False,
-        default=1.0,
+        default=1,
         help="pixels values will be multiplied by it",
     )
 
@@ -164,18 +267,26 @@ def darkframe_display():
 
     args = parser.parse_args()
 
-    control_values = {control: int(getattr(args, control)) for control in controls}
+    control_values = {control: int(getattr(args, control)) for control in controllables}
 
-    image, image_controls = library.get(control_values)
+    image, image_controls = library.get(control_values, nparray=True)
 
     if args.multiplier != 1.0:
-        image._data = image.get_data() * args.multiplier
+        image = image * args.multiplier
 
-    params = ", ".join(
-        [f"{control}: {value}" for control, value in image_controls.items()]
-    )
+    if args.multiplier != 1.0:
+        image64 = image.astype(np.uint64)
+        image64 = image64 * args.multiplier
+        image64 = np.clip(image64, 0, np.iinfo(np.uint16).max)
+        image = image64.astype(np.uint16)
 
-    image.display(label=params, resize=args.resize)
+    if args.resize != 1.0:
+        shape = tuple([int(s / args.resize + 0.5) for s in image.shape])
+        image = cv2.resize(image, shape, interpolation=cv2.INTER_NEAREST)
+
+    cv2.imshow(str(image_controls), image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
 @execute
@@ -195,7 +306,7 @@ def fuse():
     # "hdf5" files present in the current
     # folder
     root_dir = Path(os.getcwd())
-    files = root_dir.glob("*.hdf5")
+    files = list(root_dir.glob("*.hdf5"))
 
     # no hdf5 file, exiting
     if not files:

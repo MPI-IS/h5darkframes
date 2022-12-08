@@ -10,14 +10,17 @@ from pathlib import Path
 from .control_range import ControlRange  # noqa: F401
 from collections import OrderedDict  # noqa: F401
 from . import create_library
-from .image_library import ImageLibrary
+from .get_image import ImageNotFoundError
+from .image_library import ImageLibrary, GetType
+from .types import Params
 
 _logger = logging.getLogger("fusion")
 
 
 def _add(
-    hdf5_file: h5py.File,
-    controls: typing.OrderedDict[str, int],
+    h5: h5py.File,
+    controllables: typing.Sequence[str],
+    param: typing.Sequence[int],
     image: npt.ArrayLike,
     config: typing.Dict,
 ) -> bool:
@@ -29,7 +32,10 @@ def _add(
     and False is returned.
     """
     create = True
-    group, created = create_library._get_group(hdf5_file, controls, create)
+    controls: typing.OrderedDict[str, int] = OrderedDict()
+    for controllable, p in zip(controllables, param):
+        controls[controllable] = p
+    group, created = create_library._get_group(h5, controls, create)
     if group and created:
         group.create_dataset("image", data=image)
         group.attrs["camera_config"] = repr(config)
@@ -41,7 +47,6 @@ def _fuse_libraries(
     target: h5py.File,
     paths: typing.Iterable[Path],
     libs: typing.Iterable[ImageLibrary],
-    params: typing.List[str],
 ) -> None:
     """
     Add the content of all libraries to the target
@@ -49,20 +54,26 @@ def _fuse_libraries(
     nb_added = 0
     for path, lib in zip(paths, libs):
         _logger.info(f"adding images from {path}")
-        controls = lib.configs()
-        for control in controls:
-            # control_ has the same content as control,
-            # but with ordered keys
-            control_ = OrderedDict()
-            for param in params:
-                control_[param] = control[param]
-            _logger.debug("adding {control} from {path}")
-            image, config = lib.get(control_)
-            added = _add(target, control_, image, config)
-            if not added:
-                _logger.debug("controls already added, skipping")
+        params: Params = lib.params()
+        controllables = lib.controllables()
+        for param in params:
+            _logger.info(f"adding {param} from {path}")
+            try:
+                c: typing.Dict[str, int] = {
+                    controllable: value
+                    for controllable, value in zip(controllables, param)
+                }
+                image, config = lib.get(c, GetType.exact)
+            except ImageNotFoundError:
+                _logger.error(
+                    f"failed to find the image corresponding to {c} in {path}, skipping"
+                )
             else:
-                nb_added += 1
+                added = _add(target, controllables, param, image, config)
+                if not added:
+                    _logger.debug("controls already added, skipping")
+                else:
+                    nb_added += 1
         _logger.info(f"added {nb_added} image(s) from {path}")
 
 
@@ -104,8 +115,7 @@ def fuse_libraries(
 
     # params is the list of controls used, in order (it matters)
     # (ImageLibrary.params returns an OrderedDict)
-    params: typing.List[str] = libs[0].controllables()
     with h5py.File(target, "a") as h5target:
-        _fuse_libraries(h5target, libraries, libs, params)
-        h5target.attrs["controls"] = repr([lib.params() for lib in libs])
+        _fuse_libraries(h5target, libraries, libs)
+        h5target.attrs["controls"] = repr([lib.ranges() for lib in libs])
         h5target.attrs["name"] = name

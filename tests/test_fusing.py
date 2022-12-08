@@ -52,63 +52,63 @@ def test_fusing_libraries():
         # the params of the target library
         # is the list of the params of the libaries
         # that have been fused
-        params = target.params()
+        params = target.ranges()
 
-        assert lib1.params() in params
-        assert lib2.params() in params
+        assert lib1.ranges() in params
+        assert lib2.ranges() in params
 
-        # reading all the configs
-        lib1_configs = lib1.configs()
-        lib2_configs = lib2.configs()
-        target_configs = target.configs()
+        # reading all the params
+        lib1_params = lib1.params()
+        lib2_params = lib2.params()
+        target_params = target.params()
 
-        # config1 comes from lib1
-        config1 = {"width": 60, "height": 11}
-        assert config1 in lib1_configs
-        assert config1 in target_configs
+        # param1 comes from lib1
+        param1 = (60, 11)
+        assert param1 in lib1_params
+        assert param1 in target_params
 
-        # config2 comes from lib1
-        config2 = {"width": 80, "height": 13}
-        assert config2 in lib1_configs
-        assert config2 in target_configs
+        # param2 comes from lib1
+        param2 = (80, 13)
+        assert param2 in lib1_params
+        assert param2 in target_params
 
-        # config3 comes from lib2
-        config3 = {"width": 40, "height": 15}
-        assert config3 in lib2_configs
-        assert config3 in target_configs
+        # param3 comes from lib2
+        param3 = (40, 15)
+        assert param3 in lib2_params
+        assert param3 in target_params
 
-        # config4 comes from both lib1 and lib2
-        config4 = {"width": 100, "height": 13}
-        assert config4 in lib1_configs
-        assert config4 in lib2_configs
-        assert config4 in target_configs
+        # param4 comes from both lib1 and lib2
+        param4 = (100, 13)
+        assert param4 in lib1_params
+        assert param4 in lib2_params
+        assert param4 in target_params
 
-        # image of config1 should have been
+        # image of param1 should have been
         # copies from lib1 to target
-        image, config = target.get(config1)
-        image1, config1 = lib1.get(config1)
+        image, config = target.get(param1, dark.GetType.exact)
+        image1, config1 = lib1.get(param1, dark.GetType.exact)
 
         assert image[0][0] == image1[0][0]
         assert image.shape == image1.shape
         assert config == config1
 
-        # image from config2 should habe
+        # image from param2 should habe
         # been copied from lib2 to target
-        image, config = target.get(config3)
-        image3, config3 = lib2.get(config3)
+        image, config = target.get(param3, dark.GetType.exact)
+        image3, config3 = lib2.get(param3, dark.GetType.exact)
         assert image[0][0] == image3[0][0]
         assert image.shape == image3.shape
         assert config == config3
 
-        # image from configs should have
+        # image from params should have
         # been copied from lib1 to target.
-        # lib2 also has this config,
+        # lib2 also has this param,
         # but as it was passed second when fusing,
         # the image in lib2 should not have been
         # copied.
-        image, config = target.get(config4)
-        image41, config41 = lib1.get(config4)
-        image42, config42 = lib2.get(config4)
+        image, config = target.get(param4, dark.GetType.exact)
+        image41, config41 = lib1.get(param4, dark.GetType.exact)
+        image42, config42 = lib2.get(param4, dark.GetType.exact)
         assert image[0][0] == image41[0][0]
         assert image.shape == image41.shape
         assert config == config41

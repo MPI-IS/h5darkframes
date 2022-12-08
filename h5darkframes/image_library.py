@@ -1,39 +1,63 @@
 import typing
 import h5py
 import copy
+import numpy as np
+from enum import Enum
 from numpy import typing as npt
 from pathlib import Path
-from .control_range import ControlRange
 from collections import OrderedDict  # noqa: F401
+from .types import Controllables, Ranges, Params, ParamImages
+from .get_image import get_image
+from .neighbors import get_neighbors, average_neighbors
+from .control_range import ControlRange  # noqa: F401
 
 
-def _get_closest(value: int, values: typing.List[int]) -> int:
+class GetType(Enum):
+    exact = 1
+    closest = 2
+    neighbors = 3
+
+
+def _get_controllables(ranges: Ranges) -> typing.Tuple[str, ...]:
     """
-    Returns the item of values the closest to value
-    (e.g. value=5, values=[1,6,10,11] : 6 is returned)
+    List of controllables that have been "ranged over"
+    when creating the libaries
     """
-    diffs = [abs(value - v) for v in values]
-    index_min = min(range(len(diffs)), key=diffs.__getitem__)
-    return values[index_min]
+    if isinstance(ranges, OrderedDict):
+        return tuple(ranges.keys())
+    return tuple(ranges[0].keys())
 
 
-def _get_image(
-    values: typing.List[int], hdf5_file: h5py.File, index: int = 0
-) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
+def _get_params(
+    h5: h5py.File,
+    controllables: Controllables,
+) -> Params:
     """
-    Returns the image in the library which has been taken with
-    the configuration the closest to "values".
+    Return the list of all configurations to which a corresponding
+    image is stored in the library.
     """
 
-    if "image" in hdf5_file.keys():
-        img = hdf5_file["image"]
-        config = eval(hdf5_file.attrs["camera_config"])
-        return img, config
+    def _append_configs(
+        controllables: Controllables,
+        h5: h5py.File,
+        index: int,
+        current: typing.List[int],
+        c: Params,
+    ):
+        if index >= len(controllables):
+            c.append(tuple(current))
+            return
+        for key in sorted(h5.keys()):
+            current_ = copy.deepcopy(current)
+            current_.append(int(key))
+            _append_configs(controllables, h5[key], index + 1, current_, c)
 
-    else:
-        keys = list([int(k) for k in hdf5_file.keys()])
-        best_value = _get_closest(values[index], keys)
-        return _get_image(values, hdf5_file[str(best_value)], index + 1)
+    index: int = 0
+    current: typing.List[int] = []
+    c: Params = []
+    _append_configs(controllables, h5, index, current, c)
+
+    return c
 
 
 class ImageLibrary:
@@ -44,61 +68,52 @@ class ImageLibrary:
     """
 
     def __init__(self, hdf5_path: Path) -> None:
+
+        # path to the library file darkframes.hdf5
         self._path = hdf5_path
-        self._hdf5_file = h5py.File(hdf5_path, "r")
-        self._controls = eval(self._hdf5_file.attrs["controls"])
 
-    def configs(self) -> typing.List[typing.Dict[str, int]]:
+        # handle to the content of the file
+        self._h5 = h5py.File(hdf5_path, "r")
+
+        # List of control ranges used to create the file.
+        self._ranges: Ranges = eval(self._h5.attrs["controls"])
+
+        # list of controllables covered by the library
+        self._controllables: Controllables = _get_controllables(self._ranges)
+
+        # list of parameters for which a darframe is stored
+        self._params: Params = _get_params(self._h5, self._controllables)
+
+        # same as above, but as a matrix (row as params)
+        self._params_points: npt.ArrayLike = np.array(self._params)
+
+        # min and max values for each controllables
+        self._min_values: typing.Tuple[int, ...] = tuple(
+            self._params_points.min(axis=0)
+        )
+        self._max_values: typing.Tuple[int, ...] = tuple(
+            self._params_points.max(axis=0)
+        )
+
+    def params(self) -> Params:
+        return self._params
+
+    def nb_pics(self) -> int:
         """
-        Return the list of all configurations to which a corresponding
-        image is stored in the library.
+        Returns the number of darkframes
+        contained by the library.
         """
+        return len(self._params)
 
-        def _add(controls, index, group, current, list_) -> None:
-            if index == len(controls):
-                list_.append(current)
-                return
-            for value in group.keys():
-                current_ = copy.deepcopy(current)
-                current_[controls[index]] = int(value)
-                _add(controls, index + 1, group[value], current_, list_)
+    def controllables(self) -> typing.Tuple[str, ...]:
+        return self._controllables
 
-        def _add_controls(controls):
-            index = 0
-            group = self._hdf5_file
-            _add(controls, index, group, {}, r)
-
-        r: typing.List[typing.Dict[str, int]] = []
-        if isinstance(self._controls, list):
-            for controls_ in self._controls:
-                controls = list(controls_.keys())
-                _add_controls(controls)
-        else:
-            controls = list(self._controls.keys())
-            _add_controls(controls)
-        return r
-
-    def controllables(self) -> typing.List[str]:
-        """
-        List of controllables that have been "ranged over"
-        when creating the libaries
-        """
-        params = self.params()
-        if isinstance(params, OrderedDict):
-            return list(params.keys())
-        return list(params[0].keys())
-
-    def params(
-        self,
-    ) -> typing.Union[
-        typing.List[typing.OrderedDict[str, ControlRange]],
-        typing.OrderedDict[str, ControlRange],
-    ]:
+    def ranges(self) -> Ranges:
         """
         Returns the range of values that have been used to generate
         this file.
         """
-        return eval(self._hdf5_file.attrs["controls"])
+        return self._ranges
 
     def name(self) -> str:
         """
@@ -107,52 +122,50 @@ class ImageLibrary:
         library.
         """
         try:
-            return self._hdf5_file.attrs["name"]
+            return self._h5.attrs["name"]
         except KeyError:
             return "(not named)"
 
     def get(
-        self, controls: typing.Dict[str, int]
+        self,
+        controls: typing.Union[typing.Tuple[int, ...], typing.Dict[str, int]],
+        get_type: GetType,
+        nparray: bool = False,
     ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
-        """
-        Returns the image in the library that was taken using
-        the configuration the closest to the passed controls.
 
-        Arguments
-        ---------
-        controls:
-          keys of controls are expected to the the same as
-          the keys of the dictionary returned by the method
-          'params' of this class
+        if isinstance(controls, dict):
+            values = tuple(
+                [controls[controllable] for controllable in self._controllables]
+            )
+        else:
+            values = controls
 
-        Returns
-        -------
-        Image of the library and its related camera configuration
-        """
+        if get_type == GetType.exact:
+            closest = False
+            return get_image(values, self._h5, nparray, closest)
 
-        for control in controls:
-            if control not in self.controllables():
-                slist = ", ".join(self._controls)
-                raise ValueError(
-                    f"Failed to get an image from the image library {self._path}: "
-                    f"the control {control} is not supported (supported: {slist})"
+        elif get_type == GetType.closest:
+            closest = True
+            return get_image(values, self._h5, nparray, closest)
+
+        elif get_type == GetType.neighbors:
+            neighbors: ParamImages = get_neighbors(self._h5, values)
+            if not neighbors:
+                return self.get(controls, GetType.closest, nparray)
+            else:
+                return (
+                    average_neighbors(
+                        values, self._min_values, self._max_values, neighbors
+                    ),
+                    {},
                 )
 
-        for control in self.controllables():
-            if control not in controls:
-                raise ValueError(
-                    f"Failed to get an image from the image library {self._path}: "
-                    f"the value for the control {control} needs to be specified"
-                )
-
-        values = list(controls.values())
-        image: npt.ArrayLike
-        config: typing.Dict
-        image, config = _get_image(values, self._hdf5_file, index=0)
-        return image, config
+        raise ValueError(
+            "ImageLibrary get method called with unsupported " f"GetType: {get_type}"
+        )
 
     def close(self) -> None:
-        self._hdf5_file.close()
+        self._h5.close()
 
     def __enter__(self):
         return self

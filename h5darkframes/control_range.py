@@ -53,6 +53,14 @@ class ControlRange:
         """
         return the list of values in the range
         """
+        if self.step == 0:
+            if self.min != self.max:
+                raise ValueError(
+                    "Issue with range configuration: a step of 0 is accepted only if the min and the max values "
+                    "are different (min: {self.min}, max: {self.max}"
+                )
+            else:
+                return [self.min]
         return list(range(self.min, self.max + 1, self.step))
 
     def __str__(self, name: typing.Optional[str] = None):
