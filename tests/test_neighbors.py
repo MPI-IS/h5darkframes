@@ -33,45 +33,46 @@ class PseudoH5File:
                     d = d[str(value)]
 
             d["image"] = image
-            
-    def get(self)->typing.Dict[typing.Any,typing.Any]:
+
+    def get(self) -> typing.Dict[typing.Any, typing.Any]:
         return self._d
+
 
 def test_neighbor_indexes():
 
-    values = [0,1,2,3,4,5,6,7]
-    
+    values = [0, 1, 2, 3, 4, 5, 6, 7]
+
     target = 5
-    low,high = dark.neighbors._neighbor_indexes(values,target)
+    low, high = dark.neighbors._neighbor_indexes(values, target)
     assert low == 5
     assert high is None
 
     target = 0
-    low,high = dark.neighbors._neighbor_indexes(values,target)
+    low, high = dark.neighbors._neighbor_indexes(values, target)
     assert low == 0
     assert high is None
 
     target = 7
-    low,high = dark.neighbors._neighbor_indexes(values,target)
+    low, high = dark.neighbors._neighbor_indexes(values, target)
     assert low == 7
     assert high is None
 
     target = -1
-    low,high = dark.neighbors._neighbor_indexes(values,target)
+    low, high = dark.neighbors._neighbor_indexes(values, target)
     assert low is None
     assert high is None
 
     target = 8
-    low,high = dark.neighbors._neighbor_indexes(values,target)
+    low, high = dark.neighbors._neighbor_indexes(values, target)
     assert low is None
     assert high is None
 
     target = 3
-    values = [0,1,2,4,5,6]
-    low,high = dark.neighbors._neighbor_indexes(values,target)
+    values = [0, 1, 2, 4, 5, 6]
+    low, high = dark.neighbors._neighbor_indexes(values, target)
     assert low == 2
     assert high == 3
-    
+
 
 def test_get_neighbors():
     def _image(value: int) -> npt.ArrayLike:
@@ -93,18 +94,15 @@ def test_get_neighbors():
 
     target = (2, 4)
     neighbors = dark.neighbors.get_neighbors(h5, target)
-    assert len(neighbors)==4
+    assert len(neighbors) == 4
     expected = ((1, 3), (3, 3), (3, 5), (1, 5))
     for e in expected:
         assert e in neighbors
 
-    average_image = dark.neighbors.average_neighbors(
-        target,(1,3),(3,9),neighbors
-    )
-    s = [sum(e) for e in expected]
-    expected_image_value = sum([sum(e) for e in expected])/len(expected)
+    average_image = dark.neighbors.average_neighbors(target, (1, 3), (3, 9), neighbors)
+    expected_image_value = sum([sum(e) for e in expected]) / len(expected)
     assert average_image[0][0] == expected_image_value
-    
+
     target = (0, 0)
     neighbors = dark.neighbors.get_neighbors(h5, target)
     assert not neighbors
@@ -113,15 +111,14 @@ def test_get_neighbors():
     neighbors = dark.neighbors.get_neighbors(h5, target)
     assert not neighbors
 
-    target = (4,9)
+    target = (4, 9)
     neighbors = dark.neighbors.get_neighbors(h5, target)
     assert not neighbors
-    closest,_ = dark.get_image.get_image(target,h5,False,True)
+    closest, _ = dark.get_image.get_image(target, h5, False, True)
     assert closest[0][0] == 12  # (3+9)
 
-    target = (3,2)
+    target = (3, 2)
     neighbors = dark.neighbors.get_neighbors(h5, target)
     assert not neighbors
-    closest,_ = dark.get_image.get_image(target,h5,False,True)
+    closest, _ = dark.get_image.get_image(target, h5, False, True)
     assert closest[0][0] == 6  # (3+3)
-

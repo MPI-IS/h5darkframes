@@ -63,30 +63,30 @@ def test_fusing_libraries():
         target_params = target.params()
 
         # param1 comes from lib1
-        param1 = (60,11)
+        param1 = (60, 11)
         assert param1 in lib1_params
         assert param1 in target_params
 
         # param2 comes from lib1
-        param2 = (80,13)
+        param2 = (80, 13)
         assert param2 in lib1_params
         assert param2 in target_params
 
         # param3 comes from lib2
-        param3 = (40,15)
+        param3 = (40, 15)
         assert param3 in lib2_params
         assert param3 in target_params
 
         # param4 comes from both lib1 and lib2
-        param4 = (100,13)
+        param4 = (100, 13)
         assert param4 in lib1_params
         assert param4 in lib2_params
         assert param4 in target_params
 
         # image of param1 should have been
         # copies from lib1 to target
-        image, config = target.get(param1,dark.GetType.exact)
-        image1, config1 = lib1.get(param1,dark.GetType.exact)
+        image, config = target.get(param1, dark.GetType.exact)
+        image1, config1 = lib1.get(param1, dark.GetType.exact)
 
         assert image[0][0] == image1[0][0]
         assert image.shape == image1.shape
@@ -94,8 +94,8 @@ def test_fusing_libraries():
 
         # image from param2 should habe
         # been copied from lib2 to target
-        image, config = target.get(param3,dark.GetType.exact)
-        image3, config3 = lib2.get(param3,dark.GetType.exact)
+        image, config = target.get(param3, dark.GetType.exact)
+        image3, config3 = lib2.get(param3, dark.GetType.exact)
         assert image[0][0] == image3[0][0]
         assert image.shape == image3.shape
         assert config == config3
@@ -106,9 +106,9 @@ def test_fusing_libraries():
         # but as it was passed second when fusing,
         # the image in lib2 should not have been
         # copied.
-        image, config = target.get(param4,dark.GetType.exact)
-        image41, config41 = lib1.get(param4,dark.GetType.exact)
-        image42, config42 = lib2.get(param4,dark.GetType.exact)
+        image, config = target.get(param4, dark.GetType.exact)
+        image41, config41 = lib1.get(param4, dark.GetType.exact)
+        image42, config42 = lib2.get(param4, dark.GetType.exact)
         assert image[0][0] == image41[0][0]
         assert image.shape == image41.shape
         assert config == config41

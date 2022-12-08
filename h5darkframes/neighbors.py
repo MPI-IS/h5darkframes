@@ -11,11 +11,11 @@ def _neighbor_indexes(
 ) -> typing.Tuple[typing.Optional[int], typing.Optional[int]]:
 
     distances = [abs(target - v) for v in values]
-    
+
     index_min = min(range(len(distances)), key=distances.__getitem__)
 
-    if values[index_min]==target:
-        return index_min,None
+    if values[index_min] == target:
+        return index_min, None
 
     if index_min == 0:
         lower, higher = (None, None) if target < values[index_min] else (0, 1)
@@ -93,17 +93,20 @@ def average_neighbors(
             ]
         )
 
-    def _distance(v1: typing.Tuple[int, ...], v2: typing.Tuple[int, ...]) -> float:
+    def _distance(v1: typing.Tuple[float, ...], v2: typing.Tuple[float, ...]) -> float:
         return math.sqrt(sum([(a - b) ** 2 for a, b in zip(v1, v2)]))
 
+    normalized: typing.Dict[typing.Tuple[int, ...], typing.Tuple[float, ...]]
     normalized = {
         values: _normalize(values, min_values, max_values) for values in images.keys()
     }
 
-    normalized_target = _normalize(target_values,min_values, max_values)
-    
+    normalized_target = _normalize(target_values, min_values, max_values)
+
+    distances: typing.Dict[typing.Tuple[float, ...], float]
     distances = {
-        values: _distance(normalized_target, normalized[values]) for values in images.keys()
+        values: _distance(normalized_target, normalized[values])
+        for values in images.keys()
     }
 
     sum_distances = sum(distances.values())
@@ -118,4 +121,4 @@ def average_neighbors(
             r += d * image  # type: ignore
         except NameError:
             r = d * image  # type: ignore
-    return r.astype(image.dtype)
+    return r.astype(image.dtype)  # type: ignore

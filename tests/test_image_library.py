@@ -141,7 +141,7 @@ def test_update_library():
                 assert il.name() == "testlib"
             for width in (60, 80, 100):
                 for height in (10, 11, 12, 13):
-                    (width,height) in params
+                    (width, height) in params
 
             # updating the library: the control ranges are wider
             controls = OrderedDict()
@@ -153,4 +153,4 @@ def test_update_library():
                 assert il.name() == "testlib2"
             for width in (60, 80, 100, 120, 140):
                 for height in (8, 9, 10, 11, 12, 13):
-                    (width,height) in params
+                    (width, height) in params

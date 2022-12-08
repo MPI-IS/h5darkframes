@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from numpy import typing as npt
 import matplotlib.pyplot as plt
-from rich.progress import track, Progress
+from rich.progress import track
 from collections import OrderedDict
 
 Temperature = typing.NewType("Temperature", int)
@@ -90,19 +90,21 @@ def run():
 
     _, axs = plt.subplots(nb_rows, nb_colns)
 
-    def _format_exposure(value:int)->str:
-        if value>1e4 :
+    def _format_exposure(value: int) -> str:
+        if value > 1e4:
             v = value * 1e-6
             return f"{v:.2f}s"
         else:
-            micro = u'\u00B5'
+            micro = "\u00B5"
             return f"{value}{micro}s"
 
-    def _format_temperature(value:int)->str:
-        degree = u'\N{DEGREE SIGN}'
+    def _format_temperature(value: int) -> str:
+        degree = "\N{DEGREE SIGN}"
         return f"{value}{degree}C"
-        
-    for pixel_index, pixel in track(enumerate(pixels), description="generating histograms"):
+
+    for pixel_index, pixel in track(
+        enumerate(pixels), description="generating histograms"
+    ):
         for config in configs:
             p = axs[pixel_row[pixel], config_coln[config]]
             images = darkfiles[config]

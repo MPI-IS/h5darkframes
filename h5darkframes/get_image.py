@@ -30,7 +30,7 @@ def get_image(
     ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
 
         if "image" in hdf5_file.keys():
-            
+
             img = hdf5_file["image"]
             try:
                 config = eval(hdf5_file.attrs["camera_config"])
@@ -56,6 +56,6 @@ def get_image(
                     raise ImageNotFoundError()
             else:
                 value = values[index]
-            return _retrieve(values, hdf5_file[str(value)], nparray, closest, index+1)
+            return _retrieve(values, hdf5_file[str(value)], nparray, closest, index + 1)
 
     return _retrieve(values, h5, nparray, closest, 0)
