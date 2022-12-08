@@ -21,9 +21,8 @@ def _get_closest(value: int, values: typing.List[int]) -> int:
 def get_image(
     values: typing.Tuple[int, ...], h5: h5py.File, nparray: bool, closest: bool
 ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
-
     def _retrieve(
-        values: typing.Tuple[int,...],
+        values: typing.Tuple[int, ...],
         hdf5_file: h5py.File,
         nparray: bool,
         closest: bool,
@@ -53,8 +52,6 @@ def get_image(
                     raise ImageNotFoundError()
             else:
                 value = values[index]
-            return _retrieve(
-                values, hdf5_file[str(value)], nparray, closest, index
-            )
+            return _retrieve(values, hdf5_file[str(value)], nparray, closest, index)
 
     return _retrieve(values, h5, nparray, closest, 0)

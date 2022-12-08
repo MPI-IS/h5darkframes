@@ -15,6 +15,6 @@ if __name__ == "__main__":
     lib = dark.ImageLibrary(path)
     print(f"Library: {lib.name()}")
     print("darkframes for controls:")
-    for config in lib.configs():
-        print("\t", config)
+    for param in lib.params():
+        print("\t", param)
     print()

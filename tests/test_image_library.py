@@ -82,39 +82,41 @@ def test_create_library():
             dark.library("testlib", camera, controls, avg_over, path, progress=None)
 
             with dark.ImageLibrary(path) as il:
-                configs = il.configs()
+                params = il.params()
                 for width in (60, 80, 100):
                     for height in (10, 11, 12, 13):
-                        assert {"width": width, "height": height} in configs
+                        assert (width,height) in params
 
             with dark.ImageLibrary(path) as il:
 
+                closest = dark.GetType.closest
+                
                 params = il.ranges()
                 assert params["width"].min == 60
                 assert params["height"].max == 13
 
                 desired = {"width": 60, "height": 10}
-                image, camera_config = il.get(desired)
+                image, camera_config = il.get(desired, closest)
                 assert camera_config["width"] == 60
                 assert camera_config["height"] == 10
 
                 desired = {"width": 61, "height": 11}
-                image, camera_config = il.get(desired)
+                image, camera_config = il.get(desired, closest)
                 assert camera_config["width"] == 60
                 assert camera_config["height"] == 11
 
                 desired = {"width": 75, "height": 11}
-                image, camera_config = il.get(desired)
+                image, camera_config = il.get(desired, closest)
                 assert camera_config["width"] == 80
                 assert camera_config["height"] == 11
 
                 desired = {"width": 75, "height": 14}
-                image, camera_config = il.get(desired)
+                image, camera_config = il.get(desired, closest)
                 assert camera_config["width"] == 80
                 assert camera_config["height"] == 13
 
                 desired = {"width": 75, "height": 9}
-                image, camera_config = il.get(desired)
+                image, camera_config = il.get(desired, closest)
                 assert camera_config["width"] == 80
                 assert camera_config["height"] == 10
 

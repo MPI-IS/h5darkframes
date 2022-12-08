@@ -5,7 +5,7 @@ from .control_range import ControlRange
 Controllables = typing.Tuple[str, ...]
 """
 List of controllables that have been ranged over to create the file library, in order.
-Controllables will be the keys of instances of Ranges. 
+Controllables will be the keys of instances of Ranges.
 """
 
 Ranges = typing.Union[
@@ -25,17 +25,14 @@ If the file has been created by fusing other files, then this is a list, e.g.
 
 Params = typing.List[typing.Tuple[int, ...]]
 """
-Concrete Controllables values associated to a darkframes. The tuples are of the same 
+Concrete Controllables values associated to a darkframes. The tuples are of the same
 length than Contrallables, and in the same order, e.g.
-if an instance of Controllables is ["c1","c2"] 
-and an instance of Params is [1,2], this means the library contains a darkframe for 
+if an instance of Controllables is ["c1","c2"]
+and an instance of Params is [1,2], this means the library contains a darkframe for
 the configuration {"c1":1, "c2":2}.
 """
 
-ParamImages = typing.Dict[
-    typing.Tuple[int,...],
-    npt.ArrayLike
-]
+ParamImages = typing.Dict[typing.Tuple[int, ...], npt.ArrayLike]
 """
 The parameters associated with the corresponding image.
 """

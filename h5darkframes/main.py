@@ -6,7 +6,8 @@ import argparse
 import numpy as np
 from pathlib import Path
 from .get_image import ImageNotFoundError
-from .image_library import ImageLibrary
+from .types import Params, Controllables
+from .image_library import ImageLibrary, GetType
 from .image_stats import ImageStats
 from . import executables
 from .fuse_libraries import fuse_libraries
@@ -120,7 +121,7 @@ def asi_zwo_darkframes_library():
 
 def _darkframes_info_pretty(library: ImageLibrary) -> None:
 
-    controllables: typing.List[str] = library.controllables()
+    controllables: Controllables = library.controllables()
 
     from rich.table import Table
     from rich.console import Console
@@ -135,13 +136,14 @@ def _darkframes_info_pretty(library: ImageLibrary) -> None:
         table.add_column(key)
 
     print()
-    configs = library.configs()
-    for config in track(configs, description="reading images..."):
+    params: Params = library.params()
+    for param in track(params, description="reading images..."):
         row: typing.List[str] = []
         for controllable in controllables:
-            row.append(str(config[controllable]))
+            row.append(controllable)
         try:
-            image, _ = library.get(config)
+            c = {controllable: p for controllable, p in zip(controllables, param)}
+            image, _ = library.get(c, GetType.exact)
         except ImageNotFoundError:
             for key in stat_keys:
                 row.append("-")
@@ -158,19 +160,26 @@ def _darkframes_info_pretty(library: ImageLibrary) -> None:
 
 def _darkframes_info_fast(library: ImageLibrary, stats: bool) -> None:
 
-    configs = library.configs()
+    params: Params = library.params()
+    controllables: Controllables = library.controllables()
     print(f"\nconfigurations\n{'-'*14}")
     image_stats = ""
-    for config in configs:
+    for param in params:
         if stats:
             try:
-                image, _ = library.get(config)
+                c = {controllable: p for p, controllable in zip(param, controllables)}
+                image, _ = library.get(c, GetType.exact)
             except ImageNotFoundError:
                 image_stats = "image not found"
             else:
                 image_stats = str(ImageStats(image))
         print(
-            "\t".join([f"{key}: {value}" for key, value in config.items()])
+            "\t".join(
+                [
+                    f"{controllable}: {p}"
+                    for p, controllable in zip(param, controllables)
+                ]
+            )
             + f"\t\t{image_stats}"
         )
     print()
