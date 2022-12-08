@@ -136,11 +136,11 @@ def _darkframes_info_pretty(library: ImageLibrary) -> None:
         table.add_column(key)
 
     print()
-    params: Params = library.params()
+    params: Params = sorted(library.params())
     for param in track(params, description="reading images..."):
         row: typing.List[str] = []
-        for controllable in controllables:
-            row.append(controllable)
+        for p in param:
+            row.append(str(p))
         try:
             c = {controllable: p for controllable, p in zip(controllables, param)}
             image, _ = library.get(c, GetType.exact)

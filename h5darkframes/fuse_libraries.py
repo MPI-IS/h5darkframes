@@ -57,7 +57,7 @@ def _fuse_libraries(
         params: Params = lib.params()
         controllables = lib.controllables()
         for param in params:
-            _logger.info("adding {param} from {path}")
+            _logger.info(f"adding {param} from {path}")
             try:
                 c: typing.Dict[str, int] = {
                     controllable: value

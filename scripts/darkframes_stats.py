@@ -90,20 +90,27 @@ def run():
 
     _, axs = plt.subplots(nb_rows, nb_colns)
 
-    with Progress() as progress:
+    def _format_exposure(value:int)->str:
+        if value>1e4 :
+            v = value * 1e-6
+            return f"{v:.2f}s"
+        else:
+            micro = u'\u00B5'
+            return f"{value}{micro}s"
 
-        task = progress.add_task("generating plots", total=len(pixels) * len(configs))
-
-        for pixel_index, pixel in enumerate(pixels):
-            for config in configs:
-                p = axs[pixel_row[pixel], config_coln[config]]
-                images = darkfiles[config]
-                values = [image[pixel[0], pixel[1]] for image in images]
-                p.hist(values, 10)
-                p.set_title(
-                    f"pixel {pixel_index}, temp: {config[0]}, exposure: {config[1]}"
-                )
-                progress.update(task, advance=1)
+    def _format_temperature(value:int)->str:
+        degree = u'\N{DEGREE SIGN}'
+        return f"{value}{degree}C"
+        
+    for pixel_index, pixel in track(enumerate(pixels), description="generating histograms"):
+        for config in configs:
+            p = axs[pixel_row[pixel], config_coln[config]]
+            images = darkfiles[config]
+            values = [image[pixel[0], pixel[1]] for image in images]
+            p.hist(values, 10)
+            p.set_title(
+                f"pixel {pixel_index} {_format_temperature(config[0])} {_format_exposure(config[1])}"
+            )
 
     plt.show()
 
