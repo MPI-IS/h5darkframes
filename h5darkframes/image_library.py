@@ -60,6 +60,30 @@ def _get_params(
     return c
 
 
+class DarkframeError(Exception):
+    def __init__(
+        self,
+        img: npt.NDArray,
+        dtype=None,
+        shape: typing.Optional[typing.Tuple[int, int]] = None,
+    ):
+        if dtype is not None:
+            self._error = str(
+                f"darkframe expects an image of type {dtype}, "
+                f"got {img.dtype} instead"  # type: ignore
+            )
+        elif shape is not None:
+            self._error = str(
+                f"darkframe expects an image of shape {shape}, "
+                f"got {img.shape} instead"  # type: ignore
+            )
+        else:
+            self._error = "darkframe substraction error"
+
+    def __str__(self) -> str:
+        return self._error
+
+
 class ImageLibrary:
     """
     Object for reading an hdf5 file that must have been generated
@@ -163,6 +187,51 @@ class ImageLibrary:
         raise ValueError(
             "ImageLibrary get method called with unsupported " f"GetType: {get_type}"
         )
+
+    def substract(
+        self,
+        img: npt.NDArray,
+        config: typing.Dict[str, int],
+        conversion: typing.Dict[str, typing.Tuple[str, typing.Callable[[int], int]]] = {
+            "TargetTemp": ("Temperature", lambda t: int(t / 10.0 + 0.5))
+        },
+    ):
+
+        # for asi-zwo camera: the darkframes were created by ranging over target temperature,
+        # but for retrieving the desired darkframe, the temperature (and not the target temperature)
+        # has to be used.
+        for origin, target in conversion.items():
+            if origin in config and target[0] in config:
+                config = copy.deepcopy(config)
+                config[origin] = target[1](config[target[0]])
+
+        # checking we have in the configuration of the image the information
+        # required to retrieve the darkframe
+        controllables = self.controllables()
+        for controllable in controllables:
+            if controllable not in config:
+                raise ValueError(
+                    f"Can not substract darkframes: the library {self.name()} requires "
+                    f"value for the controllable {controllable}"
+                )
+
+        # getting a suitable darkframe
+        darkframe, _ = self.get(config, GetType.neighbors, nparray=True)
+
+        # checking the darkframe is of suitable type/shape
+        if not darkframe.dtype == img.dtype:  # type: ignore
+            raise DarkframeError(img, dtype=darkframe.dtype)  # type: ignore
+        if not darkframe.shape == img.shape:  # type: ignore
+            raise DarkframeError(img, shape=darkframe.shape)  # type: ignore
+
+        # substracting
+        im64 = img.astype(np.uint64)
+        dark64 = darkframe.astype(np.uint64)  # type: ignore
+        sub64 = im64 - dark64
+        sub64[sub64 < 0] = 0
+
+        # returning
+        return sub64.astype(img.dtype)
 
     def close(self) -> None:
         self._h5.close()
