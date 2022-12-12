@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "h5darkframes"
-version = "0.1.0"
+version = "0.1.1"
 description = "python API for creating and using hdf5 darkframes libraries "
 authors = [
 	"Vincent Berenz <vberenz@tuebingen.mpg.de>",
