@@ -10,7 +10,7 @@ class Progress:
         self._estimated_duration = duration
         self._nb_pics = nb_pics
 
-    def reach_control_feedback(
+    def config_feedback(
         self,
         control: str,
         current_value: int,
@@ -21,8 +21,8 @@ class Progress:
     ) -> None:
         raise NotImplementedError()
 
-    def picture_taken_feedback(
-        self, controls: typing.OrderedDict[str, int], time_delta: float, nb_pics: int
+    def picture_feedback(
+            self, controllables: Controllables, param: Param
     ) -> None:
         raise NotImplementedError()
 
@@ -33,7 +33,7 @@ class AliveBarProgress(Progress):
         self._bar = bar
         self._pics = 0
 
-    def reach_control_feedback(
+    def config_feedback(
         self,
         control: str,
         current_value: int,
@@ -50,12 +50,12 @@ class AliveBarProgress(Progress):
         )
         self._bar.text(f)
 
-    def picture_taken_feedback(
-        self, controls: typing.OrderedDict[str, int], time_delta: float, nb_pics: int
+    def picture_feedback(
+            self, controllables: Controllables, param: Param
     ) -> None:
         self._pics += nb_pics
         self._bar(nb_pics)
-        str_controls = ", ".join([f"{key}: {value}" for key, value in controls.items()])
+        str_controls = ", ".join([f"{key}: {value}" for key, value in zip(controllables,param)])
         self._bar.text = str(
             f"taking picture {self._pics}/{self._nb_pics} " f"({str_controls})"
         )

@@ -18,48 +18,6 @@ class GetType(Enum):
     neighbors = 3
 
 
-def _get_controllables(ranges: Ranges) -> typing.Tuple[str, ...]:
-    """
-    List of controllables that have been "ranged over"
-    when creating the libaries
-    """
-    if isinstance(ranges, OrderedDict):
-        return tuple(ranges.keys())
-    return tuple(ranges[0].keys())
-
-
-def _get_params(
-    h5: h5py.File,
-    controllables: Controllables,
-) -> Params:
-    """
-    Return the list of all configurations to which a corresponding
-    image is stored in the library.
-    """
-
-    def _append_configs(
-        controllables: Controllables,
-        h5: h5py.File,
-        index: int,
-        current: typing.List[int],
-        c: Params,
-    ):
-        if index >= len(controllables):
-            c.append(tuple(current))
-            return
-        for key in sorted(h5.keys()):
-            current_ = copy.deepcopy(current)
-            current_.append(int(key))
-            _append_configs(controllables, h5[key], index + 1, current_, c)
-
-    index: int = 0
-    current: typing.List[int] = []
-    c: Params = []
-    _append_configs(controllables, h5, index, current, c)
-
-    return c
-
-
 class DarkframeError(Exception):
     def __init__(
         self,
@@ -84,6 +42,9 @@ class DarkframeError(Exception):
         return self._error
 
 
+    
+
+
 class ImageLibrary:
     """
     Object for reading an hdf5 file that must have been generated
@@ -103,7 +64,11 @@ class ImageLibrary:
         self._ranges: Ranges = eval(self._h5.attrs["controls"])
 
         # list of controllables covered by the library
-        self._controllables: Controllables = _get_controllables(self._ranges)
+        self._controllables: Controllables
+        if isinstance(self._ranges, OrderedDict):
+            self._controllables = tuple(ranges.keys())
+        else:
+            self._controllables = tuple(ranges[0].keys())
 
         # list of parameters for which a darframe is stored
         self._params: Params = _get_params(self._h5, self._controllables)
@@ -150,6 +115,39 @@ class ImageLibrary:
         except KeyError:
             return "(not named)"
 
+    def add(
+            self,
+            controls: typing.Union[typing.Tuple[int, ...], typing.Dict[str, int]],
+            img: npt.ArrayLike,
+            camera_config: typing.Dict,
+            overwrite: bool
+    )->bool:
+
+        if isinstance(controls, dict):
+            values = tuple(
+                [controls[controllable] for controllable in self._controllables]
+            )
+        else:
+            values = controls
+
+        return h5.add(self._h5, values, img, camera_config, overwrite)
+            
+        
+    def rm(
+            self,
+            controls: typing.Union[typing.Tuple[int, ...], typing.Dict[str, int]],
+    )->typing.Optional[typing.Tuple[npt.ArrayLike, typing.Dict]]:
+        
+        if isinstance(controls, dict):
+            values = tuple(
+                [controls[controllable] for controllable in self._controllables]
+            )
+        else:
+            values = controls
+
+        return h5.rm(self._h5,values)
+            
+        
     def get(
         self,
         controls: typing.Union[typing.Tuple[int, ...], typing.Dict[str, int]],

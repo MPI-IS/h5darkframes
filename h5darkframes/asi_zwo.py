@@ -49,17 +49,6 @@ class AsiZwoCamera(Camera):
         instance._camera.configure_from_toml(config)
         return instance
 
-    def estimate_picture_time(self, controls: typing.Mapping[str, int]) -> float:
-        """
-        estimation of how long it will take for a picture
-        to be taken (typically relevant if one of the control
-        is the exposure time)
-        """
-        if "Exposure" not in controls:
-            return self._camera.get_controls()["Exposure"].value / 1e6
-        else:
-            return controls["Exposure"] / 1e6
-
     def set_control(self, control: str, value: int) -> None:
         """
         Changing the configuration of the camera
