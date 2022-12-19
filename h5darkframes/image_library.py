@@ -6,10 +6,11 @@ from enum import Enum
 from numpy import typing as npt
 from pathlib import Path
 from collections import OrderedDict  # noqa: F401
-from .types import Controllables, Ranges, Params, ParamImages
+from .types import Controllables, Ranges, Param, Params, ParamImage, ParamImages
 from .get_image import get_image
 from .neighbors import get_neighbors, average_neighbors
 from .control_range import ControlRange  # noqa: F401
+from . import h5
 
 
 class GetType(Enum):
@@ -45,7 +46,8 @@ def _get_params(
         c: Params,
     ):
         if index >= len(controllables):
-            c.append(tuple(current))
+            if "image" in h5.keys():
+                c.append(tuple(current))
             return
         for key in sorted(h5.keys()):
             current_ = copy.deepcopy(current)
@@ -91,13 +93,17 @@ class ImageLibrary:
     Allows to access images in the library.
     """
 
-    def __init__(self, hdf5_path: Path) -> None:
+    def __init__(self, hdf5_path: Path, edit: bool = False) -> None:
 
         # path to the library file darkframes.hdf5
         self._path = hdf5_path
 
         # handle to the content of the file
-        self._h5 = h5py.File(hdf5_path, "r")
+        self._edit = edit
+        if not edit:
+            self._h5 = h5py.File(hdf5_path, "r")
+        else:
+            self._h5 = h5py.File(hdf5_path, "a")
 
         # List of control ranges used to create the file.
         self._ranges: Ranges = eval(self._h5.attrs["controls"])
@@ -118,6 +124,34 @@ class ImageLibrary:
         self._max_values: typing.Tuple[int, ...] = tuple(
             self._params_points.max(axis=0)
         )
+
+    def add(
+        self,
+        param: Param,
+        img: npt.ArrayLike,
+        camera_config: typing.Dict,
+        overwrite: bool,
+    ) -> bool:
+        if not self._edit:
+            raise RuntimeError(
+                "can not add image to the darkframes library: it has not "
+                "been open in editable mode"
+            )
+        r = h5.add(self._h5, param, img, camera_config, overwrite)
+        if r:
+            self._params.append(param)
+        return r
+
+    def rm(self, param: Param) -> typing.Optional[ParamImage]:
+        if not self._edit:
+            raise RuntimeError(
+                "can not delete image to the darkframes library: it has not "
+                "been open in editable mode"
+            )
+        r = h5.rm(self._h5, param)
+        if r is not None:
+            self._params.remove(param)
+        return r
 
     def params(self) -> Params:
         return self._params

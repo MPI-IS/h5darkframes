@@ -23,6 +23,11 @@ If the file has been created by fusing other files, then this is a list, e.g.
 ]
 """
 
+Param = typing.Tuple[int, ...]
+"""
+Concrete values of controllables, in order.
+"""
+
 Params = typing.List[typing.Tuple[int, ...]]
 """
 Concrete Controllables values associated to a darkframes. The tuples are of the same
@@ -32,7 +37,16 @@ and an instance of Params is [1,2], this means the library contains a darkframe 
 the configuration {"c1":1, "c2":2}.
 """
 
-ParamImages = typing.Dict[typing.Tuple[int, ...], npt.ArrayLike]
+ParamImage = typing.Tuple[
+    typing.Tuple[int, ...], npt.ArrayLike, typing.Dict[str, typing.Any]
+]
 """
-The parameters associated with the corresponding image.
+Parameter associated with the corresponding image/camera config.
+"""
+
+ParamImages = typing.Dict[
+    typing.Tuple[int, ...], typing.Tuple[npt.ArrayLike, typing.Dict[str, typing.Any]]
+]
+"""
+Parameters associated with the corresponding image/camera config.
 """

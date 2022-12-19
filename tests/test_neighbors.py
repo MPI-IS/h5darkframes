@@ -23,7 +23,7 @@ class PseudoH5File:
         param: typing.Tuple[int, ...]
         image: npt.ArrayLike
 
-        for param, image in param_images.items():
+        for param, (image,_) in param_images.items(): 
             d = main_d
             for value in param:
                 try:
@@ -33,6 +33,7 @@ class PseudoH5File:
                     d = d[str(value)]
 
             d["image"] = image
+            d["camera_config"] = repr({})
 
     def get(self) -> typing.Dict[typing.Any, typing.Any]:
         return self._d
@@ -86,9 +87,8 @@ def test_get_neighbors():
     rows = (1, 3)
     cols = (3, 5, 7, 9)
 
-    param_images: dark.types.ParamImages = {
-        p[0]: p[1] for p in [_param(x, y) for x in rows for y in cols]
-    }
+    ps = [_param(x, y) for x in rows for y in cols]
+    param_images: dark.types.ParamImages = {p[0]: (p[1],{}) for p in ps}
 
     h5 = PseudoH5File(controllables, param_images).get()
 

@@ -1,3 +1,4 @@
+import pytest
 import typing
 import tempfile
 import time
@@ -141,7 +142,7 @@ def test_update_library():
                 assert il.name() == "testlib"
             for width in (60, 80, 100):
                 for height in (10, 11, 12, 13):
-                    (width, height) in params
+                    assert (width, height) in params
 
             # updating the library: the control ranges are wider
             controls = OrderedDict()
@@ -154,3 +155,50 @@ def test_update_library():
             for width in (60, 80, 100, 120, 140):
                 for height in (8, 9, 10, 11, 12, 13):
                     (width, height) in params
+
+
+def test_add_rm():
+
+    controls = OrderedDict()
+    controls["width"] = dark.ControlRange(60, 100, 20)
+    controls["height"] = dark.ControlRange(10, 13, 1, timeout=2.0)
+
+    avg_over = 3
+
+    with dark.DummyCamera(controls, value=3, dynamic=False) as camera:
+
+        with tempfile.TemporaryDirectory() as tmp:
+
+            # creating a library
+            path = Path(tmp) / "test.hdf5"
+            dark.library("testlib", camera, controls, avg_over, path, progress=None)
+            with dark.ImageLibrary(path) as il:
+                params = il.params()
+                assert il.name() == "testlib"
+            for width in (60, 80, 100):
+                for height in (10, 11, 12, 13):
+                    assert (width, height) in params
+
+            with dark.ImageLibrary(path, edit=True) as il:
+                param = (100, 11)
+                assert param in il.params()
+                img, config = il.get(param, dark.GetType.exact, nparray=True)
+                il.rm(param)
+                assert not param in il.params()
+                with pytest.raises(dark.ImageNotFoundError):
+                    il.get(param, dark.GetType.exact)
+
+            with dark.ImageLibrary(path, edit=True) as il:
+                with pytest.raises(dark.ImageNotFoundError):
+                    il.get(param, dark.GetType.exact)
+                assert param not in il.params()
+                il.add(param, img, config, True)
+                assert param in il.params()
+
+            with dark.ImageLibrary(path, edit=True) as il:
+                assert param in il.params()
+                img2, config2 = il.get(param, dark.GetType.exact, nparray=True)
+                assert img2.dtype == img.dtype
+                assert img2.shape == img.shape
+                assert img2[0][0] == img[0][0]
+                assert config2 == config

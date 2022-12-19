@@ -11,6 +11,7 @@ from .image_library import ImageLibrary, GetType
 from .image_stats import ImageStats
 from . import executables
 from .fuse_libraries import fuse_libraries
+from . import validation
 
 
 def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
@@ -117,6 +118,13 @@ def asi_zwo_darkframes_library():
 
     # informing user
     print(f"\ncreated the file {path}\n")
+
+
+@execute
+def darkframes_validation() -> None:
+
+    path = executables.get_darkframes_path()
+    validation.print_leave_one_out(path)
 
 
 def _darkframes_info_pretty(library: ImageLibrary) -> None:

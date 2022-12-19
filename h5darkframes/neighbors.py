@@ -2,6 +2,7 @@ import math
 import typing
 import h5py
 import copy
+import numpy as np
 from numpy import typing as npt
 from .types import ParamImages
 
@@ -17,6 +18,9 @@ def _neighbor_indexes(
     if values[index_min] == target:
         return index_min, None
 
+    if len(values) == 1:
+        return index_min, None
+    
     if index_min == 0:
         lower, higher = (None, None) if target < values[index_min] else (0, 1)
     elif index_min == len(distances) - 1:
@@ -34,7 +38,7 @@ def _neighbor_indexes(
     return lower, higher
 
 
-def _neighbors(
+def _grid_neighbors(
     h5: h5py.File,
     target_values: typing.Tuple[int, ...],
     neighbors: ParamImages,
@@ -43,8 +47,11 @@ def _neighbors(
 ) -> bool:
 
     if "image" in h5.keys():
-        img: npt.ArrayLike = h5["image"]
-        neighbors[tuple(current)] = img
+        img_: npt.ArrayLike = h5["image"]
+        img = np.zeros(img_.shape, img_.dtype)
+        img_.read_direct(img)
+        config: typing.Dict[str, typing.Any] = eval(h5.attrs["camera_config"])
+        neighbors[tuple(current)] = img, config
         return True
 
     keys = sorted(list([int(k) for k in h5.keys()]))
@@ -62,9 +69,9 @@ def _neighbors(
                 return False
 
     return True
+      
 
-
-def get_neighbors(h5: h5py.File, target_values=typing.Tuple[int, ...]) -> ParamImages:
+def _get_grid_neighbors(h5: h5py.File, target_values=typing.Tuple[int, ...]) -> ParamImages:
 
     neighbors: ParamImages = {}
     current: typing.List[int] = []
@@ -72,8 +79,17 @@ def get_neighbors(h5: h5py.File, target_values=typing.Tuple[int, ...]) -> ParamI
     inside = _neighbors(h5, target_values, neighbors, current, index)
     if not inside:
         return {}
+
+    print()
+    
     return neighbors
 
+
+def distance_neighbors(
+        h5: h5py.File,
+        target_values=typing.Tuple[int, ...],
+        nb_neighbors:int =4) -> ParamImages:
+    pass
 
 def average_neighbors(
     target_values: typing.Tuple[int, ...],
@@ -115,7 +131,7 @@ def average_neighbors(
 
     r: npt.ArrayLike
 
-    for values, image in images.items():
+    for values, (image, _) in images.items():
         d = distances[values]
         try:
             r += d * image  # type: ignore
