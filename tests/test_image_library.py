@@ -184,7 +184,7 @@ def test_add_rm():
                 assert param in il.params()
                 img, config = il.get(param, dark.GetType.exact, nparray=True)
                 il.rm(param)
-                assert not param in il.params()
+                assert param not in il.params()
                 with pytest.raises(dark.ImageNotFoundError):
                     il.get(param, dark.GetType.exact)
 

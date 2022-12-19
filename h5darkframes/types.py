@@ -28,13 +28,28 @@ Param = typing.Tuple[int, ...]
 Concrete values of controllables, in order.
 """
 
-Params = typing.List[typing.Tuple[int, ...]]
+NParam = typing.Tuple[float, ...]
+"""
+Concrete values of controllables, in order (normalized).
+"""
+
+Params = typing.List[Param]
 """
 Concrete Controllables values associated to a darkframes. The tuples are of the same
 length than Contrallables, and in the same order, e.g.
 if an instance of Controllables is ["c1","c2"]
 and an instance of Params is [1,2], this means the library contains a darkframe for
 the configuration {"c1":1, "c2":2}.
+"""
+
+NParams = typing.List[NParam]
+"""
+Normalized list of params
+"""
+
+ParamMap = typing.Dict[Param, NParam]
+"""
+Map between params and their normalized values
 """
 
 ParamImage = typing.Tuple[

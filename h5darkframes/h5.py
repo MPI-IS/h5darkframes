@@ -89,5 +89,5 @@ def rm(h5: h5py.File, param: Param) -> typing.Optional[ParamImage]:
     for group in groups:
         if not list(group.keys()):
             del group.parent[group.name]
-    
+
     return param, img, config

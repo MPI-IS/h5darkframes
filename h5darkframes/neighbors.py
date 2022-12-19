@@ -1,95 +1,71 @@
 import math
 import typing
-import h5py
-import copy
-import numpy as np
 from numpy import typing as npt
-from .types import ParamImages
+from .types import ParamImages, Param, NParam, Params, ParamMap
 
 
-def _neighbor_indexes(
-    values: typing.List[int], target: int
-) -> typing.Tuple[typing.Optional[int], typing.Optional[int]]:
+def _normalize(
+    values: Param, min_values: Param, max_values: Param
+) -> typing.Tuple[float, ...]:
+    return tuple(
+        [
+            ((v - min_) / (max_ - min_))
+            for v, min_, max_ in zip(values, min_values, max_values)
+        ]
+    )
 
-    distances = [abs(target - v) for v in values]
 
-    index_min = min(range(len(distances)), key=distances.__getitem__)
+def _distance(v1: NParam, v2: NParam) -> float:
+    return math.sqrt(sum([(a - b) ** 2 for a, b in zip(v1, v2)]))
 
-    if values[index_min] == target:
-        return index_min, None
 
-    if len(values) == 1:
-        return index_min, None
-    
-    if index_min == 0:
-        lower, higher = (None, None) if target < values[index_min] else (0, 1)
-    elif index_min == len(distances) - 1:
-        lower, higher = (
-            (None, None)
-            if target > values[index_min]
-            else (len(distances) - 2, len(distances) - 1)
-        )
+def _closest(
+    target_values: NParam,
+    params: ParamMap,
+) -> Param:
+    d = {p: _distance(target_values, np) for p, np in params.items()}
+    return sorted(list(params.keys()), key=lambda p: d[p])[0]
+
+
+def get_neighbors(
+    params: Params,
+    min_values: Param,
+    max_values: Param,
+    target_values=Param,
+) -> Params:
+
+    try:
+        index = params.index(target_values)
+    except ValueError:
+        pass
     else:
-        lower, higher = (
-            (index_min, index_min + 1)
-            if target > values[index_min]
-            else (index_min - 1, index_min)
-        )
-    return lower, higher
+        return [params[index]]
 
+    def _side_neighbor(
+        index, target_values: NParam, params: ParamMap, sign: bool
+    ) -> typing.Optional[Param]:
+        if sign:
+            subparams = {
+                p: np for p, np in params.items() if np[index] >= target_values[index]
+            }
+        else:
+            subparams = {
+                p: np for p, np in params.items() if np[index] < target_values[index]
+            }
+        if not subparams:
+            return None
+        return _closest(target_values, subparams)
 
-def _grid_neighbors(
-    h5: h5py.File,
-    target_values: typing.Tuple[int, ...],
-    neighbors: ParamImages,
-    current: typing.List[int] = [],
-    index: int = 0,
-) -> bool:
-
-    if "image" in h5.keys():
-        img_: npt.ArrayLike = h5["image"]
-        img = np.zeros(img_.shape, img_.dtype)
-        img_.read_direct(img)
-        config: typing.Dict[str, typing.Any] = eval(h5.attrs["camera_config"])
-        neighbors[tuple(current)] = img, config
-        return True
-
-    keys = sorted(list([int(k) for k in h5.keys()]))
-    target: int = target_values[index]
-    lower, higher = _neighbor_indexes(keys, target)
-
-    for item in (lower, higher):
-        if item is not None:
-            current_ = copy.deepcopy(current)
-            current_.append(keys[item])
-            inside = _neighbors(
-                h5[str(keys[item])], target_values, neighbors, current_, index + 1
-            )
-            if not inside:
-                return False
-
-    return True
-      
-
-def _get_grid_neighbors(h5: h5py.File, target_values=typing.Tuple[int, ...]) -> ParamImages:
-
-    neighbors: ParamImages = {}
-    current: typing.List[int] = []
-    index: int = 0
-    inside = _neighbors(h5, target_values, neighbors, current, index)
-    if not inside:
-        return {}
-
-    print()
-    
+    ntarget_values = _normalize(target_values, min_values, max_values)
+    nparams = {param: _normalize(param, min_values, max_values) for param in params}
+    neighbors: Params = []
+    for index in range(len(target_values)):
+        for sign in (True, False):
+            candidate = _side_neighbor(index, ntarget_values, nparams, sign)
+            if candidate is not None:
+                neighbors.append(candidate)
     return neighbors
 
-
-def distance_neighbors(
-        h5: h5py.File,
-        target_values=typing.Tuple[int, ...],
-        nb_neighbors:int =4) -> ParamImages:
-    pass
 
 def average_neighbors(
     target_values: typing.Tuple[int, ...],

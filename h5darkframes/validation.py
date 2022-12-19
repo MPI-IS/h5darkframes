@@ -17,7 +17,7 @@ class TempRemove:
     def __init__(self, lib: ImageLibrary, param: Param):
         self._lib = lib
         self._param = param
-        if not param in lib.params():
+        if param not in lib.params():
             raise ValueError(
                 f"Can not remove param {param} from the image library: "
                 f"is not present"
@@ -37,7 +37,7 @@ def leave_one_out(p: Path) -> typing.Generator[Stat, None, None]:
 
         params = lib.params()
 
-        #for param in track(params, "reading darkframes stats"):
+        # for param in track(params, "reading darkframes stats"):
         for param in sorted(params):
 
             with TempRemove(lib, param) as image:
@@ -58,7 +58,7 @@ def leave_one_out(p: Path) -> typing.Generator[Stat, None, None]:
 
 
 def print_leave_one_out(p: Path):
-    
+
     with ImageLibrary(p) as lib:
         controllables_ = lib.controllables()
         controllables = ", ".join(controllables_)

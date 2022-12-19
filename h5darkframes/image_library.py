@@ -6,7 +6,7 @@ from enum import Enum
 from numpy import typing as npt
 from pathlib import Path
 from collections import OrderedDict  # noqa: F401
-from .types import Controllables, Ranges, Param, Params, ParamImage, ParamImages
+from .types import Controllables, Ranges, Param, Params, ParamImage
 from .get_image import get_image
 from .neighbors import get_neighbors, average_neighbors
 from .control_range import ControlRange  # noqa: F401
@@ -118,10 +118,10 @@ class ImageLibrary:
         self._params_points: npt.ArrayLike = np.array(self._params)
 
         # min and max values for each controllables
-        self._min_values: typing.Tuple[int, ...] = tuple(
+        self._min_params: typing.Tuple[int, ...] = tuple(
             self._params_points.min(axis=0)
         )
-        self._max_values: typing.Tuple[int, ...] = tuple(
+        self._max_params: typing.Tuple[int, ...] = tuple(
             self._params_points.max(axis=0)
         )
 
@@ -192,28 +192,34 @@ class ImageLibrary:
     ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
 
         if isinstance(controls, dict):
-            values = tuple(
+            params = tuple(
                 [controls[controllable] for controllable in self._controllables]
             )
         else:
-            values = controls
+            params = controls
 
         if get_type == GetType.exact:
             closest = False
-            return get_image(values, self._h5, nparray, closest)
+            return get_image(params, self._h5, nparray, closest)
 
         elif get_type == GetType.closest:
             closest = True
-            return get_image(values, self._h5, nparray, closest)
+            return get_image(params, self._h5, nparray, closest)
 
         elif get_type == GetType.neighbors:
-            neighbors: ParamImages = get_neighbors(self._h5, values)
+            neighbors: Params = get_neighbors(
+                self._h5, params, self._min_params, self._max_params
+            )
             if not neighbors:
                 return self.get(controls, GetType.closest, nparray)
             else:
+                neighbor_images = {
+                    neighbor: self.get(neighbor, GetType.closest, nparray)
+                    for neighbor in neighbors
+                }
                 return (
                     average_neighbors(
-                        values, self._min_values, self._max_values, neighbors
+                        params, self._min_params, self._max_params, neighbor_images
                     ),
                     {},
                 )
