@@ -11,9 +11,12 @@ from .toml_config import read_config
 
 class AsiZwoCamera(Camera):
     def __init__(
-        self, index, control_ranges: typing.Mapping[str, ControlRange]
+            self, index, control_ranges: typing.Mapping[str, ControlRange],
+            progress: typing.Optional[Progress] = None,
+            dump_path: typing.Optional[Path] = None,
+            dump_format: str = "npy"
     ) -> None:
-        super().__init__(control_ranges)
+        super().__init__(control_ranges,progress,dump_path,dump_format)
         self._camera = zwo.Camera(index)
 
     def picture(self) -> npt.ArrayLike:

@@ -13,8 +13,6 @@ from .progress import Progress
 _logger = logging.getLogger("h5darkframes")
 
 
-
-
 def _add_to_hdf5(
         camera: Camera,
         controllables: Controllables,
@@ -95,8 +93,8 @@ def library(
 
     # iterating over all the controls and adding
     # the images to the hdf5 file
-    for controls in ControlRange.iterate_controls(control_ranges):
-        
+    with h5py.File(hdf5_path, "a") as hdf5_file:
+        for controls in ControlRange.iterate_controls(control_ranges):
             _add_to_hdf5(
                 camera,
                 controls,

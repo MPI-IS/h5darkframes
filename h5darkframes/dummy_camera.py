@@ -65,8 +65,11 @@ class DummyCamera(Camera):
         control_ranges: typing.Mapping[str, ControlRange],
         value: int = 0,
         dynamic: bool = True,
+        progress: typing.Optional[Progress] = None,
+        dump_path: typing.Optional[Path] = None,
+        dump_format: str = "npy"
     ) -> None:
-        super().__init__(control_ranges)
+        super().__init__(control_ranges, progress, dump_path, dump_format)
         self.width = 0
         self._height = _Height(0, dynamic)
         self._value = value

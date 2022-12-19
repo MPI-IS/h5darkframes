@@ -47,7 +47,7 @@ class Camera(ImageTaker):
             control_ranges: typing.Mapping[str, ControlRange],
             progress: typing.Optional[Progress] = None,
             dump_path: typing.Optional[Path] = None,
-            dumpy_format: str = "tiff"
+            dump_format: str = "tiff"
     ) -> None:
         self._thresholds = {
             control: cr.threshold for control, cr in control_ranges.items()
