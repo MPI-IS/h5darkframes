@@ -161,7 +161,7 @@ class ImageLibrary:
     def get(
         self,
         controls: typing.Union[Param, typing.Dict[str, int]],
-        nparray: bool = False,
+        nparray: bool = True,
     ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
 
         if isinstance(controls, dict):

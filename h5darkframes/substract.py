@@ -36,8 +36,8 @@ def substract(img: npt.NDArray, darkframe: npt.NDArray) -> npt.NDArray:
         raise DarkframeError(img, shape=darkframe.shape)  # type: ignore
 
     # substracting
-    im64 = img.astype(np.uint64)
-    dark64 = darkframe.astype(np.uint64)  # type: ignore
+    im64 = img.astype(np.int64)
+    dark64 = darkframe.astype(np.int64)  # type: ignore
     sub64 = im64 - dark64
     sub64[sub64 < 0] = 0
 

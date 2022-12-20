@@ -12,6 +12,7 @@ from .image_stats import ImageStats
 from . import executables
 from .fuse_libraries import fuse_libraries
 from . import validation
+from .substract import substract
 
 
 def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
@@ -118,6 +119,60 @@ def asi_zwo_darkframes_library():
 
     # informing user
     print(f"\ncreated the file {path}\n")
+
+
+@execute
+def darkframes_perform() -> None:
+
+    import camera_zwo_asi
+    import cv2
+
+    config = Path(os.getcwd()) / "zwo_asi.toml"
+    if not config.is_file():
+        raise FileNotFoundError(
+            "failed to find camera zwo asi configuration file: " f"{config}"
+        )
+
+    camera = camera_zwo_asi.Camera(0)
+    camera.configure_from_toml(config)
+
+    print("---capturing image")
+    image = camera.capture().get_image()
+
+    controls = camera.get_controls()
+    temperature = int(0.5 + controls["Temperature"].value / 10.0)
+    exposure = controls["Exposure"].value
+    param = (temperature, exposure)
+    print("---image param:",param)
+
+    path = executables.get_darkframes_path()
+    with ImageLibrary(path) as il:
+
+        try:
+            neighbors = il.get_interpolation_neighbors(param)
+        except ValueError:
+            neighbors = [il.get_closest(param)]
+        print("---neighbors")
+        for n in neighbors:
+            print("\t", n)
+
+        print("---generating darkframe")
+        if param in neighbors:
+            darkframe, _ = il.get(param)
+        else:
+            darkframe = il.generate_darkframe(param, neighbors)
+
+        print("---substracting darkframe")
+        subimage = substract(image, darkframe)
+
+        img_path = Path(os.getcwd()) / "image.tiff"
+        darkframe_path = Path(os.getcwd()) / "darkframe.tiff"
+        subimage_path = Path(os.getcwd()) / "subimage.tiff"
+
+        print("---printing files")
+        cv2.imwrite(str(img_path), image)
+        cv2.imwrite(str(darkframe_path), darkframe)
+        cv2.imwrite(str(subimage_path), subimage)
 
 
 @execute
