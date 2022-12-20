@@ -95,27 +95,32 @@ def test_create_library():
                 assert params["height"].max == 13
 
                 desired = {"width": 60, "height": 10}
-                image, camera_config = il.get_closest(desired)
+                param = il.get_closest(desired)
+                image, camera_config = il.get(param)
                 assert camera_config["width"] == 60
                 assert camera_config["height"] == 10
 
                 desired = {"width": 61, "height": 11}
-                image, camera_config = il.get_closest(desired)
+                param = il.get_closest(desired)
+                image, camera_config = il.get(param)
                 assert camera_config["width"] == 60
                 assert camera_config["height"] == 11
 
                 desired = {"width": 75, "height": 11}
-                image, camera_config = il.get_closest(desired)
+                param = il.get_closest(desired)
+                image, camera_config = il.get(param)
                 assert camera_config["width"] == 80
                 assert camera_config["height"] == 11
 
                 desired = {"width": 75, "height": 14}
-                image, camera_config = il.get_closest(desired)
+                param = il.get_closest(desired)
+                image, camera_config = il.get(param)
                 assert camera_config["width"] == 80
                 assert camera_config["height"] == 13
 
                 desired = {"width": 75, "height": 9}
-                image, camera_config = il.get_closest(desired)
+                param = il.get_closest(desired)
+                image, camera_config = il.get(param)
                 assert camera_config["width"] == 80
                 assert camera_config["height"] == 10
 
@@ -184,7 +189,7 @@ def test_add_rm():
                 il.rm(param)
                 assert param not in il.params()
                 with pytest.raises(dark.ImageNotFoundError):
-                    il.get(param, dark.GetType.exact)
+                    il.get(param)
 
             with dark.ImageLibrary(path, edit=True) as il:
                 with pytest.raises(dark.ImageNotFoundError):

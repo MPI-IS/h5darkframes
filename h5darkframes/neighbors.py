@@ -175,14 +175,14 @@ def average_neighbors(
             ]
         )
 
-    normalized: typing.Dict[typing.Tuple[int, ...], typing.Tuple[float, ...]]
+    normalized: typing.Dict[Param, NParam]
     normalized = {
         values: _normalize(values, min_values, max_values) for values in images.keys()
     }
 
     normalized_target = _normalize(target_values, min_values, max_values)
 
-    distances: typing.Dict[typing.Tuple[float, ...], float]
+    distances: typing.Dict[NParam, float]
     distances = {
         values: _distance(normalized_target, normalized[values])
         for values in images.keys()
