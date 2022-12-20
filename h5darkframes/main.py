@@ -143,7 +143,7 @@ def darkframes_perform() -> None:
     temperature = int(0.5 + controls["Temperature"].value / 10.0)
     exposure = controls["Exposure"].value
     param = (temperature, exposure)
-    print("---image param:",param)
+    print("---image param:", param)
 
     path = executables.get_darkframes_path()
     with ImageLibrary(path) as il:
