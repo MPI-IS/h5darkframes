@@ -11,7 +11,7 @@ from .control_range import ControlRange  # noqa: F401
 from collections import OrderedDict  # noqa: F401
 from . import create_library
 from .get_image import ImageNotFoundError
-from .image_library import ImageLibrary, GetType
+from .image_library import ImageLibrary
 from .types import Params
 
 _logger = logging.getLogger("fusion")
@@ -63,7 +63,7 @@ def _fuse_libraries(
                     controllable: value
                     for controllable, value in zip(controllables, param)
                 }
-                image, config = lib.get(c, GetType.exact)
+                image, config = lib.get(c)
             except ImageNotFoundError:
                 _logger.error(
                     f"failed to find the image corresponding to {c} in {path}, skipping"

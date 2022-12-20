@@ -2,20 +2,18 @@ import typing
 import h5py
 import copy
 import numpy as np
-from enum import Enum
 from numpy import typing as npt
 from pathlib import Path
 from collections import OrderedDict  # noqa: F401
-from .types import Controllables, Ranges, Params, ParamImages
+from .types import Controllables, Ranges, Param, Params, ParamImage
 from .get_image import get_image
-from .neighbors import get_neighbors, average_neighbors
+from .neighbors import (
+    get_neighbors,
+    average_neighbors,
+    interpolation_neighbors,
+)
 from .control_range import ControlRange  # noqa: F401
-
-
-class GetType(Enum):
-    exact = 1
-    closest = 2
-    neighbors = 3
+from . import h5
 
 
 def _get_controllables(ranges: Ranges) -> typing.Tuple[str, ...]:
@@ -45,7 +43,8 @@ def _get_params(
         c: Params,
     ):
         if index >= len(controllables):
-            c.append(tuple(current))
+            if "image" in h5.keys():
+                c.append(tuple(current))
             return
         for key in sorted(h5.keys()):
             current_ = copy.deepcopy(current)
@@ -60,30 +59,6 @@ def _get_params(
     return c
 
 
-class DarkframeError(Exception):
-    def __init__(
-        self,
-        img: npt.NDArray,
-        dtype=None,
-        shape: typing.Optional[typing.Tuple[int, int]] = None,
-    ):
-        if dtype is not None:
-            self._error = str(
-                f"darkframe expects an image of type {dtype}, "
-                f"got {img.dtype} instead"  # type: ignore
-            )
-        elif shape is not None:
-            self._error = str(
-                f"darkframe expects an image of shape {shape}, "
-                f"got {img.shape} instead"  # type: ignore
-            )
-        else:
-            self._error = "darkframe substraction error"
-
-    def __str__(self) -> str:
-        return self._error
-
-
 class ImageLibrary:
     """
     Object for reading an hdf5 file that must have been generated
@@ -91,13 +66,17 @@ class ImageLibrary:
     Allows to access images in the library.
     """
 
-    def __init__(self, hdf5_path: Path) -> None:
+    def __init__(self, hdf5_path: Path, edit: bool = False) -> None:
 
         # path to the library file darkframes.hdf5
         self._path = hdf5_path
 
         # handle to the content of the file
-        self._h5 = h5py.File(hdf5_path, "r")
+        self._edit = edit
+        if not edit:
+            self._h5 = h5py.File(hdf5_path, "r")
+        else:
+            self._h5 = h5py.File(hdf5_path, "a")
 
         # List of control ranges used to create the file.
         self._ranges: Ranges = eval(self._h5.attrs["controls"])
@@ -112,12 +91,40 @@ class ImageLibrary:
         self._params_points: npt.ArrayLike = np.array(self._params)
 
         # min and max values for each controllables
-        self._min_values: typing.Tuple[int, ...] = tuple(
+        self._min_params: typing.Tuple[int, ...] = tuple(
             self._params_points.min(axis=0)
         )
-        self._max_values: typing.Tuple[int, ...] = tuple(
+        self._max_params: typing.Tuple[int, ...] = tuple(
             self._params_points.max(axis=0)
         )
+
+    def add(
+        self,
+        param: Param,
+        img: npt.ArrayLike,
+        camera_config: typing.Dict,
+        overwrite: bool,
+    ) -> bool:
+        if not self._edit:
+            raise RuntimeError(
+                "can not add image to the darkframes library: it has not "
+                "been open in editable mode"
+            )
+        r = h5.add(self._h5, param, img, camera_config, overwrite)
+        if r:
+            self._params.append(param)
+        return r
+
+    def rm(self, param: Param) -> typing.Optional[ParamImage]:
+        if not self._edit:
+            raise RuntimeError(
+                "can not delete image to the darkframes library: it has not "
+                "been open in editable mode"
+            )
+        r = h5.rm(self._h5, param)
+        if r is not None:
+            self._params.remove(param)
+        return r
 
     def params(self) -> Params:
         return self._params
@@ -152,86 +159,84 @@ class ImageLibrary:
 
     def get(
         self,
-        controls: typing.Union[typing.Tuple[int, ...], typing.Dict[str, int]],
-        get_type: GetType,
+        controls: typing.Union[Param, typing.Dict[str, int]],
         nparray: bool = False,
     ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
 
         if isinstance(controls, dict):
-            values = tuple(
+            params = tuple(
                 [controls[controllable] for controllable in self._controllables]
             )
         else:
-            values = controls
+            params = controls
 
-        if get_type == GetType.exact:
-            closest = False
-            return get_image(values, self._h5, nparray, closest)
+        closest = False
+        return get_image(params, self._h5, nparray, closest)
 
-        elif get_type == GetType.closest:
-            closest = True
-            return get_image(values, self._h5, nparray, closest)
+    def get_closest(
+        self,
+        controls: typing.Union[Param, typing.Dict[str, int]],
+        nparray: bool = False,
+    ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
+        if isinstance(controls, dict):
+            params = tuple(
+                [controls[controllable] for controllable in self._controllables]
+            )
+        else:
+            params = controls
 
-        elif get_type == GetType.neighbors:
-            neighbors: ParamImages = get_neighbors(self._h5, values)
-            if not neighbors:
-                return self.get(controls, GetType.closest, nparray)
-            else:
-                return (
-                    average_neighbors(
-                        values, self._min_values, self._max_values, neighbors
-                    ),
-                    {},
-                )
+        closest = True
+        return get_image(params, self._h5, nparray, closest)
 
-        raise ValueError(
-            "ImageLibrary get method called with unsupported " f"GetType: {get_type}"
+    def get_neighbors(
+        self, controls: typing.Union[Param, typing.Dict[str, int]]
+    ) -> Params:
+
+        if isinstance(controls, dict):
+            params = tuple(
+                [controls[controllable] for controllable in self._controllables]
+            )
+        else:
+            params = controls
+
+        neighbors: Params = get_neighbors(
+            self._params, self._min_params, self._max_params, params
         )
 
-    def substract(
-        self,
-        img: npt.NDArray,
-        config: typing.Dict[str, int],
-        conversion: typing.Dict[str, typing.Tuple[str, typing.Callable[[int], int]]] = {
-            "TargetTemp": ("Temperature", lambda t: int(t / 10.0 + 0.5))
-        },
-    ):
+        return neighbors
 
-        # for asi-zwo camera: the darkframes were created by ranging over target temperature,
-        # but for retrieving the desired darkframe, the temperature (and not the target temperature)
-        # has to be used.
-        for origin, target in conversion.items():
-            if origin in config and target[0] in config:
-                config = copy.deepcopy(config)
-                config[origin] = target[1](config[target[0]])
+    def get_interpolation_neighbors(
+        self, controls: typing.Union[Param, typing.Dict[str, int]], fixed_index: int = 1
+    ) -> Params:
+        if isinstance(controls, dict):
+            params = tuple(
+                [controls[controllable] for controllable in self._controllables]
+            )
+        else:
+            params = controls
 
-        # checking we have in the configuration of the image the information
-        # required to retrieve the darkframe
-        controllables = self.controllables()
-        for controllable in controllables:
-            if controllable not in config:
-                raise ValueError(
-                    f"Can not substract darkframes: the library {self.name()} requires "
-                    f"value for the controllable {controllable}"
-                )
+        neighbors: Params = interpolation_neighbors(self._params, params, fixed_index)
 
-        # getting a suitable darkframe
-        darkframe, _ = self.get(config, GetType.neighbors, nparray=True)
+        return neighbors
 
-        # checking the darkframe is of suitable type/shape
-        if not darkframe.dtype == img.dtype:  # type: ignore
-            raise DarkframeError(img, dtype=darkframe.dtype)  # type: ignore
-        if not darkframe.shape == img.shape:  # type: ignore
-            raise DarkframeError(img, shape=darkframe.shape)  # type: ignore
+    def generate_darkframe(
+        self, controls: typing.Union[Param, typing.Dict[str, int]], neighbors: Params
+    ) -> npt.ArrayLike:
 
-        # substracting
-        im64 = img.astype(np.uint64)
-        dark64 = darkframe.astype(np.uint64)  # type: ignore
-        sub64 = im64 - dark64
-        sub64[sub64 < 0] = 0
+        if isinstance(controls, dict):
+            params = tuple(
+                [controls[controllable] for controllable in self._controllables]
+            )
+        else:
+            params = controls
 
-        # returning
-        return sub64.astype(img.dtype)
+        nparray = True
+        neighbor_images = {
+            neighbor: self.get(neighbor, nparray) for neighbor in neighbors
+        }
+        return average_neighbors(
+            params, self._min_params, self._max_params, neighbor_images
+        )
 
     def close(self) -> None:
         self._h5.close()

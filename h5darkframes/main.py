@@ -7,10 +7,11 @@ import numpy as np
 from pathlib import Path
 from .get_image import ImageNotFoundError
 from .types import Params, Controllables
-from .image_library import ImageLibrary, GetType
+from .image_library import ImageLibrary
 from .image_stats import ImageStats
 from . import executables
 from .fuse_libraries import fuse_libraries
+from . import validation
 
 
 def execute(f: typing.Callable[[], None]) -> typing.Callable[[], None]:
@@ -119,6 +120,13 @@ def asi_zwo_darkframes_library():
     print(f"\ncreated the file {path}\n")
 
 
+@execute
+def darkframes_validation() -> None:
+
+    path = executables.get_darkframes_path()
+    validation.print_leave_one_out(path)
+
+
 def _darkframes_info_pretty(library: ImageLibrary) -> None:
 
     controllables: Controllables = library.controllables()
@@ -143,7 +151,7 @@ def _darkframes_info_pretty(library: ImageLibrary) -> None:
             row.append(str(p))
         try:
             c = {controllable: p for controllable, p in zip(controllables, param)}
-            image, _ = library.get(c, GetType.exact)
+            image, _ = library.get(c)
         except ImageNotFoundError:
             for key in stat_keys:
                 row.append("-")
@@ -168,7 +176,7 @@ def _darkframes_info_fast(library: ImageLibrary, stats: bool) -> None:
         if stats:
             try:
                 c = {controllable: p for p, controllable in zip(param, controllables)}
-                image, _ = library.get(c, GetType.exact)
+                image, _ = library.get(c)
             except ImageNotFoundError:
                 image_stats = "image not found"
             else:

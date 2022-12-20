@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "h5darkframes"
-version = "0.1.1"
+version = "0.1.2"
 description = "python API for creating and using hdf5 darkframes libraries "
 authors = [
 	"Vincent Berenz <vberenz@tuebingen.mpg.de>",
@@ -30,6 +30,7 @@ darkframes-zwoasi-library = 'h5darkframes.main:asi_zwo_darkframes_library'
 darkframes-info = 'h5darkframes.main:darkframes_info'
 darkframes-display = 'h5darkframes.main:darkframe_display'
 darkframes-fuse = 'h5darkframes.main:fuse'
+darkframes-validation = 'h5darkframes.main:darkframes_validation'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
