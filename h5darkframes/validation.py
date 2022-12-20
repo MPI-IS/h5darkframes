@@ -4,10 +4,10 @@ from rich.console import Console
 from rich.progress import track
 from pathlib import Path
 import numpy as np
-from .image_library import ImageLibrary, GetType
-from .types import Param
+from .image_library import ImageLibrary
+from .types import Param, Params
 
-Stat = typing.Tuple[Param, float, float, float, float]
+Stat = typing.Tuple[Param, Params, float, float, float, float]
 """
 Param, average, standard deviation, min value, max value
 """
@@ -37,12 +37,12 @@ def leave_one_out(p: Path) -> typing.Generator[Stat, None, None]:
 
         params = lib.params()
 
-        # for param in track(params, "reading darkframes stats"):
-        for param in sorted(params):
+        for param in track(params, "reading darkframes stats"):
 
             with TempRemove(lib, param) as image:
 
-                dark, _ = lib.get(param, GetType.neighbors, nparray=True)
+                neighbors = lib.get_interpolation_neighbors(param)
+                dark = lib.generate_darkframe(param, neighbors)
 
                 im32 = image.astype(np.float32)
                 dark32 = dark.astype(np.float32)
@@ -52,7 +52,7 @@ def leave_one_out(p: Path) -> typing.Generator[Stat, None, None]:
                 avg = np.average(diff)
                 std = np.std(diff)
 
-                yield param, avg, std, min_, max_
+                yield param, neighbors, avg, std, min_, max_
 
         return
 
@@ -65,14 +65,22 @@ def print_leave_one_out(p: Path):
 
     table = Table(title="configurations")
     table.add_column(f"param ({controllables})")
+    table.add_column("neighbors")
     table.add_column("average")
     table.add_column("standard deviation")
     table.add_column("min value")
     table.add_column("max value")
 
     for stat in leave_one_out(p):
-        param, avg, std, min_, max_ = stat
-        row = [str(param), f"{avg:2f}", f"{std:2f}", f"{min_:2f}", f"{max_:2f}"]
+        param, neighbors, avg, std, min_, max_ = stat
+        row = [
+            str(param),
+            ", ".join([str(n) for n in sorted(neighbors)]),
+            f"{avg:2f}",
+            f"{std:2f}",
+            f"{min_:2f}",
+            f"{max_:2f}",
+        ]
         table.add_row(*row)
 
     print()

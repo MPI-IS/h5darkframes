@@ -2,7 +2,7 @@
 
 from .control_range import ControlRange
 from .create_library import library
-from .image_library import ImageLibrary, GetType
+from .image_library import ImageLibrary
 from .get_image import ImageNotFoundError
 from .dummy_camera import DummyCamera
 from .camera import ImageTaker
