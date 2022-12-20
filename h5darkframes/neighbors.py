@@ -175,6 +175,7 @@ def average_neighbors(
             ]
         )
 
+
     normalized: typing.Dict[Param, NParam]
     normalized = {
         values: _normalize(values, min_values, max_values) for values in images.keys()
