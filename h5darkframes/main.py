@@ -210,6 +210,10 @@ def darkframes_info():
         # basic infos
         library_name = library.name()
         control_ranges = library.ranges()
+
+        if isinstance(control_ranges, list):
+            control_ranges = control_ranges[0]
+
         nb_pics = library.nb_pics()
         print(
             str(
@@ -238,6 +242,51 @@ def darkframes_info():
             _darkframes_info_fast(library, args.stats)
         else:
             _darkframes_info_pretty(library)
+
+
+@execute
+def darkframe_neighbors():
+
+    path = executables.get_darkframes_path()
+    with ImageLibrary(path) as il:
+
+        controllables = il.controllables()
+
+        parser = argparse.ArgumentParser()
+
+        # each control parameter has its own argument
+        for control in controllables:
+            parser.add_argument(
+                f"--{control}",
+                type=int,
+                required=True,
+                help="the value for the control",
+            )
+
+        args = parser.parse_args()
+
+        param = {control: int(getattr(args, control)) for control in controllables}
+
+        try:
+            il.get(param)
+        except ImageNotFoundError:
+            pass
+        else:
+            print("in the darkframes library")
+            return
+
+        try:
+            neighbors = il.get_interpolation_neighbors(param)
+        except ValueError:
+            pass
+        else:
+            print("interpolation neighbors:")
+            for neighbor in neighbors:
+                print(neighbor)
+
+        neighbor = il.get_closest(param)
+        print("closest neighbor:")
+        print(neighbor)
 
 
 @execute

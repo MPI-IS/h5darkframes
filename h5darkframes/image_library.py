@@ -9,6 +9,7 @@ from .types import Controllables, Ranges, Param, Params, ParamImage
 from .get_image import get_image
 from .neighbors import (
     get_neighbors,
+    closest_neighbors,
     average_neighbors,
     interpolation_neighbors,
 )
@@ -176,8 +177,7 @@ class ImageLibrary:
     def get_closest(
         self,
         controls: typing.Union[Param, typing.Dict[str, int]],
-        nparray: bool = False,
-    ) -> typing.Tuple[npt.ArrayLike, typing.Dict]:
+    ) -> Param:
         if isinstance(controls, dict):
             params = tuple(
                 [controls[controllable] for controllable in self._controllables]
@@ -185,8 +185,9 @@ class ImageLibrary:
         else:
             params = controls
 
-        closest = True
-        return get_image(params, self._h5, nparray, closest)
+        return closest_neighbors(
+            self._params, self._min_params, self._max_params, params, nb_closest=1
+        )[0]
 
     def get_neighbors(
         self, controls: typing.Union[Param, typing.Dict[str, int]]
