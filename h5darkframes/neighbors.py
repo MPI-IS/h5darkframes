@@ -182,20 +182,20 @@ def average_neighbors(
 
     normalized_target = _normalize(target_values, min_values, max_values)
 
-    distances: typing.Dict[NParam, float]
-    distances = {
-        values: _distance(normalized_target, normalized[values])
+    inv_distances: typing.Dict[NParam, float]
+    inv_distances = {
+        values: 1./_distance(normalized_target, normalized[values])
         for values in images.keys()
     }
 
-    sum_distances = sum(distances.values())
+    sum_distances = sum(inv_distances.values())
 
-    distances = {values: d / sum_distances for values, d in distances.items()}
+    inv_distances = {values: d / sum_distances for values, d in inv_distances.items()}
 
     r: npt.ArrayLike
 
     for values, (image, _) in images.items():
-        d = distances[values]
+        d = inv_distances[values]
         try:
             r += d * image  # type: ignore
         except NameError:
