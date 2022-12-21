@@ -184,7 +184,7 @@ def average_neighbors(
 
     inv_distances: typing.Dict[NParam, float]
     inv_distances = {
-        values: 1./_distance(normalized_target, normalized[values])
+        values: 1.0 / _distance(normalized_target, normalized[values])
         for values in images.keys()
     }
 
