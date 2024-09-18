@@ -8,20 +8,52 @@ For now, it supports only asi zwo cameras (see [https://github.com/MPI-IS/camera
 
 > This is beta, and need some more testing
 
+## Getting Started as a User (using `pip`)
 
-## Installation
+Dependency management with `pip` is easier to set up than with `poetry`, but the optional dependency-groups are not installable with `pip`.
 
-from source:
+* Create and activate a new Python virtual environment:
+  ```bash
+  python3 -m venv --copies venv
+  source venv/bin/activate
+  ```
+* Update `pip` and build package:
+  ```bash
+  pip install -U pip  # optional but always advised
+  pip install .       # -e option for editable mode
+  ```
 
+Alternatively to building from source, the package can also be installed from [PyPI](https://pypi.org/project/h5darkframes/).
+
+## Getting Started as a Developer (using `poetry`)
+
+Dependency management with `poetry` is required for the installation of the optional dependency-groups.
+
+* Install [poetry](https://python-poetry.org/docs/).
+* Install dependencies for package
+  (also automatically creates project's virtual environment):
+  ```bash
+  poetry install
+  ```
+* Install `dev` dependency group:
+  ```bash
+  poetry install --with dev
+  ```
+* Activate project's virtual environment:
+  ```bash
+  poetry shell
+  ```
+
+## Tests (only possible for setup with `poetry`, not with `pip`)
+
+To install `test` dependency group:
 ```bash
-git clone https://github.com/MPI-IS/h5darkframes.git
-cd h5darkframes
-pip install .
+poetry install --with test
 ```
 
-from pypi:
+To run the tests:
 ```bash
-pip install h5darkframes
+python -m pytest tests
 ```
 
 ## Usage
@@ -168,6 +200,4 @@ assert image.get_data().dtype = darkframe.dtype
 
 # substracting the darkframe
 substracted_image = image.get_data()-darkframe
-
-
 ```
