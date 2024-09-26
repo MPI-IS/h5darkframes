@@ -1,7 +1,26 @@
+# Python bytecode
+__pycache__/
+.py[cod]
+
+# Distribution / packaging
+build/
+dist/
+
+# Environments
+venv
+
+# Coverage reports
+.coverage
+*.xml
+
+# mypy
+.mypy_cache/
+
+# Editors
 *~
-*build
-*__pycache__
+.vscode
+
+# Project-specific
 *darkframes.toml
 *darkframes.hdf5
 *darkframes.logs
-*dist
