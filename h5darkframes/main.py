@@ -347,23 +347,19 @@ def darkframe_neighbors():
 
 @execute
 def darkframe_substract():
-        
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
         "--temperature", type=int, required=True, help="camera temperature"
     )
 
-    parser.add_argument(
-        "--exposure", type=int, required=True, help="camera exposure"
-    )
-    
+    parser.add_argument("--exposure", type=int, required=True, help="camera exposure")
+
     args = parser.parse_args()
 
-    raw_image = np.ndarray((2822, 4144), dtype=np.uint16)
-    
-    raw_image = np.load(str(raw_image_path))
-    
+    raw_image = np.full((2822, 4144), int(65535 / 2), dtype=np.uint16)
+
     param = (args.temperature, args.exposure)
 
     with ImageLibrary(executables.get_darkframes_path()) as il:
@@ -376,33 +372,40 @@ def darkframe_substract():
         else:
             darkframe = il.generate_darkframe(param, neighbors)
         subimage = substract(raw_image, darkframe)
-            
+
+    debayered_darkframe = cv2.cvtColor(darkframe, cv2.COLOR_BAYER_BG2BGR)
     debayered_raw = cv2.cvtColor(raw_image, cv2.COLOR_BAYER_BG2BGR)
     debayered_sub = cv2.cvtColor(subimage, cv2.COLOR_BAYER_BG2BGR)
-    
-    raw_path = Path.cwd() / f"{args.filename}.tiff"
-    cv2.imwrite(str(raw_path), debayered_raw, [cv2.IMWRITE_TIFF_COMPRESSION,1])
 
-    sub_path = Path.cwd() / f"df_substracted_{args.filename}.tiff"
-    cv2.imwrite(str(sub_path),debayered_sub, [cv2.IMWRITE_TIFF_COMPRESSION,1])
-    
+    darkframe_path = Path.cwd() / f"darkframe_{args.temperature}_{args.exposure}.tiff"
+    cv2.imwrite(
+        str(darkframe_path), debayered_darkframe, [cv2.IMWRITE_TIFF_COMPRESSION, 1]
+    )
+
+    raw_path = Path.cwd() / f"raw_{args.temperature}_{args.exposure}.tiff"
+    cv2.imwrite(str(raw_path), debayered_raw, [cv2.IMWRITE_TIFF_COMPRESSION, 1])
+
+    sub_path = (
+        Path.cwd() / f"darkframe_substracted_{args.temperature}_{args.exposure}.tiff"
+    )
+    cv2.imwrite(str(sub_path), debayered_sub, [cv2.IMWRITE_TIFF_COMPRESSION, 1])
+
+    print(f"darkframe image saved in {darkframe_path}")
     print(f"raw image saved in {raw_path}")
-    print(f"darkframe substracted image saved in {raw_path}")
+    print(f"darkframe substracted image saved in {sub_path}")
 
-    
+
 @execute
 def darkframe_display():
-        
+
     parser = argparse.ArgumentParser()
-    
+
     parser.add_argument(
         "--temperature", type=int, required=True, help="camera temperature"
     )
 
-    parser.add_argument(
-        "--exposure", type=int, required=True, help="camera exposure"
-    )
-    
+    parser.add_argument("--exposure", type=int, required=True, help="camera exposure")
+
     args = parser.parse_args()
 
     param = (args.temperature, args.exposure)
@@ -420,11 +423,10 @@ def darkframe_display():
     debayered = cv2.cvtColor(darkframe, cv2.COLOR_BAYER_BG2BGR)
 
     image_path = Path.cwd() / f"darkframe_{args.temperature}_{args.exposure}.tiff"
-    cv2.imwrite(str(image_path),debayered, [cv2.IMWRITE_TIFF_COMPRESSION,1])
+    cv2.imwrite(str(image_path), debayered, [cv2.IMWRITE_TIFF_COMPRESSION, 1])
 
     print(f"darkframe image saved in {image_path}")
 
-    
 
 @execute
 def fuse():

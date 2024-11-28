@@ -32,6 +32,7 @@ darkframes-display = 'h5darkframes.main:darkframe_display'
 darkframes-fuse = 'h5darkframes.main:fuse'
 darkframes-neighbors = 'h5darkframes.main:darkframe_neighbors'
 darkframes-validation = 'h5darkframes.main:darkframes_validation'
+darkframes-substract = 'h5darkframes.main:darkframes_substract'
 darkframes-perform = 'h5darkframes.main:darkframes_perform'
 
 [build-system]
