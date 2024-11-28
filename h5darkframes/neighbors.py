@@ -1,7 +1,7 @@
 import math
 import typing
 from numpy import typing as npt
-from .types import ParamImages, Param, NParam, Params, ParamMap
+from .h5types import ParamImages, Param, NParam, Params, ParamMap
 
 
 def _normalize(

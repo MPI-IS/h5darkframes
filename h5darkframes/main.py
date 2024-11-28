@@ -301,7 +301,7 @@ def darkframes_info():
 
 
 @execute
-def darkframe_neighbors():
+def darkframes_neighbors():
 
     path = executables.get_darkframes_path()
     with ImageLibrary(path) as il:
@@ -346,7 +346,7 @@ def darkframe_neighbors():
 
 
 @execute
-def darkframe_substract():
+def darkframes_substract():
 
     parser = argparse.ArgumentParser()
 
@@ -396,7 +396,7 @@ def darkframe_substract():
 
 
 @execute
-def darkframe_display():
+def darkframes_display():
 
     parser = argparse.ArgumentParser()
 
