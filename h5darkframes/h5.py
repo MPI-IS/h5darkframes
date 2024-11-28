@@ -2,7 +2,7 @@ import typing
 import h5py
 import numpy as np
 from numpy import typing as npt
-from .types import Param, ParamImage
+from .h5types import Param, ParamImage
 
 
 def get_group(

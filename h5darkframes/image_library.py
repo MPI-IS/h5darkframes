@@ -5,7 +5,7 @@ import numpy as np
 from numpy import typing as npt
 from pathlib import Path
 from collections import OrderedDict  # noqa: F401
-from .types import Controllables, Ranges, Param, Params, ParamImage
+from .h5types import Controllables, Ranges, Param, Params, ParamImage
 from .get_image import get_image
 from .neighbors import (
     get_neighbors,

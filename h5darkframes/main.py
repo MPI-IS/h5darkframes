@@ -1,12 +1,13 @@
 import typing
 import cv2
+
 import os
 import logging
 import argparse
 import numpy as np
 from pathlib import Path
 from .get_image import ImageNotFoundError
-from .types import Params, Controllables
+from .h5types import Params, Controllables
 from .image_library import ImageLibrary
 from .image_stats import ImageStats
 from . import executables
@@ -345,61 +346,85 @@ def darkframe_neighbors():
 
 
 @execute
-def darkframe_display():
-
-    path = executables.get_darkframes_path()
-    library = ImageLibrary(path)
-    controllables = library.controllables()
-
+def darkframe_substract():
+        
     parser = argparse.ArgumentParser()
 
-    # each control parameter has its own argument
-    for control in controllables:
-        parser.add_argument(
-            f"--{control}", type=int, required=True, help="the value for the control"
-        )
-
-    # to make the image more salient
     parser.add_argument(
-        "--multiplier",
-        type=int,
-        required=False,
-        default=1,
-        help="pixels values will be multiplied by it",
+        "--temperature", type=int, required=True, help="camera temperature"
     )
 
-    # optional resize
     parser.add_argument(
-        "--resize",
-        type=float,
-        required=False,
-        default=1.0,
-        help="resize of the image during display",
+        "--exposure", type=int, required=True, help="camera exposure"
     )
-
+    
     args = parser.parse_args()
 
-    control_values = {control: int(getattr(args, control)) for control in controllables}
+    raw_image = np.ndarray((2822, 4144), dtype=np.uint16)
+    
+    raw_image = np.load(str(raw_image_path))
+    
+    param = (args.temperature, args.exposure)
 
-    image, image_controls = library.get(control_values, nparray=True)
+    with ImageLibrary(executables.get_darkframes_path()) as il:
+        try:
+            neighbors = il.get_interpolation_neighbors(param)
+        except ValueError:
+            neighbors = [il.get_closest(param)]
+        if param in neighbors:
+            darkframe, _ = il.get(param)
+        else:
+            darkframe = il.generate_darkframe(param, neighbors)
+        subimage = substract(raw_image, darkframe)
+            
+    debayered_raw = cv2.cvtColor(raw_image, cv2.COLOR_BAYER_BG2BGR)
+    debayered_sub = cv2.cvtColor(subimage, cv2.COLOR_BAYER_BG2BGR)
+    
+    raw_path = Path.cwd() / f"{args.filename}.tiff"
+    cv2.imwrite(str(raw_path), debayered_raw, [cv2.IMWRITE_TIFF_COMPRESSION,1])
 
-    if args.multiplier != 1.0:
-        image = image * args.multiplier
+    sub_path = Path.cwd() / f"df_substracted_{args.filename}.tiff"
+    cv2.imwrite(str(sub_path),debayered_sub, [cv2.IMWRITE_TIFF_COMPRESSION,1])
+    
+    print(f"raw image saved in {raw_path}")
+    print(f"darkframe substracted image saved in {raw_path}")
 
-    if args.multiplier != 1.0:
-        image64 = image.astype(np.uint64)
-        image64 = image64 * args.multiplier
-        image64 = np.clip(image64, 0, np.iinfo(np.uint16).max)
-        image = image64.astype(np.uint16)
+    
+@execute
+def darkframe_display():
+        
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument(
+        "--temperature", type=int, required=True, help="camera temperature"
+    )
 
-    if args.resize != 1.0:
-        shape = tuple([int(s / args.resize + 0.5) for s in image.shape])
-        image = cv2.resize(image, shape, interpolation=cv2.INTER_NEAREST)
+    parser.add_argument(
+        "--exposure", type=int, required=True, help="camera exposure"
+    )
+    
+    args = parser.parse_args()
 
-    cv2.imshow(str(image_controls), image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    param = (args.temperature, args.exposure)
 
+    with ImageLibrary(executables.get_darkframes_path()) as il:
+        try:
+            neighbors = il.get_interpolation_neighbors(param)
+        except ValueError:
+            neighbors = [il.get_closest(param)]
+        if param in neighbors:
+            darkframe, _ = il.get(param)
+        else:
+            darkframe = il.generate_darkframe(param, neighbors)
+
+    debayered = cv2.cvtColor(darkframe, cv2.COLOR_BAYER_BG2BGR)
+
+    image_path = Path.cwd() / f"darkframe_{args.temperature}_{args.exposure}.tiff"
+    cv2.imwrite(str(image_path),debayered, [cv2.IMWRITE_TIFF_COMPRESSION,1])
+
+    print(f"darkframe image saved in {image_path}")
+
+    
 
 @execute
 def fuse():
