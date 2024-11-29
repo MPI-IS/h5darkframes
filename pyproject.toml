@@ -28,10 +28,11 @@ rich = "^12.6.0"
 darkframes-zwoasi-config = 'h5darkframes.main:asi_zwo_darkframes_config'
 darkframes-zwoasi-library = 'h5darkframes.main:asi_zwo_darkframes_library'
 darkframes-info = 'h5darkframes.main:darkframes_info'
-darkframes-display = 'h5darkframes.main:darkframe_display'
+darkframes-display = 'h5darkframes.main:darkframes_display'
 darkframes-fuse = 'h5darkframes.main:fuse'
-darkframes-neighbors = 'h5darkframes.main:darkframe_neighbors'
+darkframes-neighbors = 'h5darkframes.main:darkframes_neighbors'
 darkframes-validation = 'h5darkframes.main:darkframes_validation'
+darkframes-substract = 'h5darkframes.main:darkframes_substract'
 darkframes-perform = 'h5darkframes.main:darkframes_perform'
 
 [build-system]

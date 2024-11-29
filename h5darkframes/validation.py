@@ -5,7 +5,7 @@ from rich.progress import track
 from pathlib import Path
 import numpy as np
 from .image_library import ImageLibrary
-from .types import Param, Params
+from .h5types import Param, Params
 
 Stat = typing.Tuple[Param, Params, float, float, float, float]
 """

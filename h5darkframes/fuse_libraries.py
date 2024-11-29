@@ -12,7 +12,7 @@ from collections import OrderedDict  # noqa: F401
 from . import create_library
 from .get_image import ImageNotFoundError
 from .image_library import ImageLibrary
-from .types import Params
+from .h5types import Params
 
 _logger = logging.getLogger("fusion")
 
