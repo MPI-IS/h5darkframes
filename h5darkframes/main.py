@@ -6,6 +6,7 @@ import logging
 import argparse
 import numpy as np
 from pathlib import Path
+from numpy import typing as npt
 from .get_image import ImageNotFoundError
 from .h5types import Params, Controllables
 from .image_library import ImageLibrary
@@ -469,3 +470,97 @@ def fuse():
 
     # fusing
     fuse_libraries(args.name, target_path, files)
+
+
+def _recast(original_img: npt.NDArray, target_image: npt.NDArray) -> npt.NDArray:
+    return (target_image * np.iinfo(original_img.dtype).max).astype(original_img.dtype)
+
+
+@execute
+def darkframes_extract():
+    """
+    Extract all images from HDF5 darkframe libraries in the current folder,
+    debayer them, and save as uncompressed TIFF files. Also create stretched
+    versions using auto-stretch.
+    """
+    try:
+        import auto_stretch
+    except ImportError:
+        raise ImportError(
+            "failed to import auto_stretch. Install it with: pip install auto-stretch"
+        )
+
+    from rich.progress import track
+
+    # find all hdf5 files in current directory
+    root_dir = Path(os.getcwd())
+    files = list(root_dir.glob("*.hdf5"))
+
+    if not files:
+        raise FileNotFoundError(
+            "failed to find any *.hdf5 file in the current folder"
+        )
+
+    # create output directory
+    output_dir = root_dir / "images"
+    output_dir.mkdir(exist_ok=True)
+
+    print(f"\nFound {len(files)} HDF5 file(s)")
+    print(f"Output directory: {output_dir}\n")
+
+    # process each library
+    for hdf5_file in files:
+        library_name = hdf5_file.stem
+        print(f"Processing library: {library_name}")
+
+        with ImageLibrary(hdf5_file) as library:
+            controllables: Controllables = library.controllables()
+            params: Params = library.params()
+
+            print(f"  Controllables: {', '.join(controllables)}")
+            print(f"  Total images: {len(params)}\n")
+
+            # process each image in the library
+            for param in track(params, description=f"  Extracting from {library_name}"):
+                # get the image
+                try:
+                    image, camera_config = library.get(param)
+                except ImageNotFoundError:
+                    print(f"  Warning: image not found for {param}, skipping")
+                    continue
+
+                # create filename from parameters
+                param_dict = {
+                    controllable: p for controllable, p in zip(controllables, param)
+                }
+                filename_base = "_".join(
+                    [f"{key}_{value}" for key, value in param_dict.items()]
+                )
+                filename_base = f"{library_name}_{filename_base}"
+
+                # debayer the image (COLOR_BAYER_BG2BGR)
+                debayered = cv2.cvtColor(image, cv2.COLOR_BAYER_BG2BGR)
+
+                # save debayered image as uncompressed TIFF
+                debayered_path = output_dir / f"{filename_base}_debayered.tiff"
+                cv2.imwrite(
+                    str(debayered_path),
+                    debayered,
+                    [cv2.IMWRITE_TIFF_COMPRESSION, 1],  # 1 = no compression
+                )
+
+                # stretch the debayered image
+                stretched = auto_stretch.apply_stretch(debayered)
+
+                # recast the stretched image back to original dtype
+                stretched_recast = _recast(debayered, stretched)
+
+                # save stretched image as uncompressed TIFF
+                stretched_path = output_dir / f"{filename_base}_stretched.tiff"
+                cv2.imwrite(
+                    str(stretched_path),
+                    stretched_recast,
+                    [cv2.IMWRITE_TIFF_COMPRESSION, 1],  # 1 = no compression
+                )
+
+    print(f"\nExtraction complete! Images saved to: {output_dir}")
