@@ -1,5 +1,4 @@
 ![unit tests](https://github.com/MPI-IS/h5darkframes/actions/workflows/tests.yaml/badge.svg)
-![mypy](https://github.com/MPI-IS/h5darkframes/actions/workflows/python_mypy.yml/badge.svg)
 
 # H5DARKFRAMES (beta)
 
